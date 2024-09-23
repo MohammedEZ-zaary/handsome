@@ -3,7 +3,6 @@
 #include "headers/handSome.hpp"
 #include "headers/route.hpp"
 #include "headers/httpServer.hpp"
-
 using std::string;
 
 // Create a global or static instance of the httpServer
