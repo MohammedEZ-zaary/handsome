@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "C/C++: g++ build active file",
+      "type": "shell",
+      "command": "/usr/bin/g++-13",
+      "args": [
+        "-g",
+        "${workspaceFolder}/src/main.cpp",
+        "${workspaceFolder}/src/httpServer.cpp",
+        "${workspaceFolder}/src/handSome.cpp",
+        "-o",
+        "${workspaceFolder}/build/http_server"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "detail": "Generated task for building a C++ program"
+    },
+    {
+      "label": "Run http_server",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/http_server",
+      "group": "test",
+      "dependsOn": "C/C++: g++ build active file",
+      "problemMatcher": [],
+      "detail": "Run the http_server executable"
+    }
+  ]
+}
+  
