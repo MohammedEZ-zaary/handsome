@@ -1,23 +1,19 @@
 #ifndef ROUTE_HPP
 #define ROUTE_HPP
-
+#include "httpServer.hpp"
 #include <string>
+#include <functional>
 
 class Route {
 public:
     std::string routeName;
-    std::string content;
-    std::string fileType ;
-
-
+    std::function<void()> excuter;  // Change to take httpServer& as an argument
 
     // Parameterized constructor
-    Route(const std::string& routeName, const std::string& content  , const std::string& fileType) {
-        this-> routeName = routeName ;
-        this->content = content ; 
-        this->fileType =  fileType ;
-    } 
-        
+    Route(const std::string& routeName, const std::function<void()>& excuter) {
+        this->routeName = routeName;
+        this->excuter = excuter;
+    }
 };
 
 #endif

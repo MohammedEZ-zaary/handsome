@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(http_server 
     src/httpServer.cpp
     src/handSome.cpp
+    src/allContentTypeHeader.cpp
     src/main.cpp
     )
 

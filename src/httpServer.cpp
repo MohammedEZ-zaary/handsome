@@ -8,12 +8,12 @@
 #include <map>
 #include "headers/httpServer.hpp"
 #include "headers/route.hpp"
-
 using std::string;
 using std::stringstream;
 using std::cout;
 using std::endl;
 
+//
 string httpServer::trim(const std::string &str) {
     // Function to trim whitespace from strings
     size_t first = str.find_first_not_of(' ');
@@ -21,7 +21,6 @@ string httpServer::trim(const std::string &str) {
     size_t last = str.find_last_not_of(' ');
     return str.substr(first, (last - first + 1));
 } ;
-
 string httpServer::extractRoute(const string& requestLine) {
     // Function to extract the route from the request line
     std::istringstream stream(requestLine);
@@ -65,7 +64,6 @@ std::map<std::string, std::string> httpServer::parseHTTPRequest(const std::strin
 
     return headers;
 }
-
 void httpServer::run() {
     // Create server socket
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -117,45 +115,15 @@ void httpServer::run() {
             continue; // Try to accept the next connection
         }
 
+       
         // Check client request
         for (const auto& pair : parseHttpHeaderRequest(buffer)) {
-            cout << pair.first + ": " + pair.second << endl; 
+            // print Header
+            // cout << pair.first + ": " + pair.second << endl; 
             if(pair.first == "Request-Line"){
                 Route routeClone =   getRoute(extractRoute(pair.second)) ;
-                if(getRoute(extractRoute(pair.second)).content != "") {
-                    // switch (routeClone.fileType)
-                    // {
-                    // case "html":
-                    //     sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/html") ;
-                    //     break;
-                    // case "js":
-                    //     sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/js") ;
-                    // case "css":
-                    //     sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/css") ;
-                    // default:
-                    //     sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/html") ;
-                    //     break;
-                    // }
-                    if(routeClone.fileType == "html"){
-                        sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/html") ;
-                    }else if (routeClone.fileType == "js")
-                    {
-                        sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/js") ;
-                    }
-                    else if (routeClone.fileType == "css")
-                    {
-                        sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/css") ;
-                    }
-                    else 
-                    {
-                        /* code */
-
-                        sendResponse(getClientSocketClone() , routeClone.content , "200 OK" , "text/html") ;
-                    }
-
-
-                    
-                }
+                cout << "GET " + extractRoute(pair.second) << endl;
+                routeClone.excuter() ;
             }
         }
 
@@ -166,7 +134,6 @@ void httpServer::run() {
     // Close server socket (this line will never be reached in the current loop)
     close(serverSocket);
 }
-
 std::string httpServer::readFileContent(const std::string& filePath) {
     std::ifstream file(filePath);
     if (!file) {
@@ -178,7 +145,6 @@ std::string httpServer::readFileContent(const std::string& filePath) {
     buffer << file.rdbuf(); // Read file contents into the stringstream
     return buffer.str(); // Return the file content
 }
-
 void httpServer::sendResponse(int clientSocket, const std::string& content, const std::string& status, const std::string& contentType) {
     std::string response = "HTTP/1.1 " + status + "\r\n";
     response += "Content-Type: " + contentType + "\r\n";
@@ -188,24 +154,18 @@ void httpServer::sendResponse(int clientSocket, const std::string& content, cons
 
     send(clientSocket, response.c_str(), response.size(), 0);
 }
-
 void httpServer::portListen(int port) {
     this->port = port; // Use 'this' pointer for clarity
 }
-
 std::map<std::string, std::string> httpServer::parseHttpHeaderRequest(const std::string& request) {
     return parseHTTPRequest(request); // Forward to the other method
 }
-
 int httpServer::getClientSocketClone() const{
     return clientSocketClone;
 }
-
 int httpServer::getServerSocketClone() const  {
     return serverSocketClone;
 }
-
-
 // Function to add a route
 void httpServer::setRoute(const Route& route) {
     if (routeCount < 100) {  // Limit to 100 routes
@@ -213,15 +173,16 @@ void httpServer::setRoute(const Route& route) {
         routeCount++;
     }
 }
-
 // Function to get a route by name
-Route httpServer::getRoute(const std::string& routeName) const {
+Route httpServer::getRoute(const std::string& routeName)  {
     for(const Route& route : routes){
         if(route.routeName == routeName) {
             return route ;
         }
     }
-
+    return Route("404", [this]() {
+        sendResponse(getClientSocketClone(), "Not Found Error 404", "404 Not Found", "text/html");
+    }); 
     // If the route is not found, return a default route
-    return Route("404", "<h1>404 - Route Not Found</h1>" , "html");
+    // return Route("404", "<h1>404 - Route Not Found</h1>" , );
 }
