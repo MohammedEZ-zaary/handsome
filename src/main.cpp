@@ -1,19 +1,23 @@
 #include <iostream>
-#include "headers/handSome.hpp"
-#include "headers/httpServer.hpp"
+#include <string>
 #include <vector>
-#include <filesystem>
-namespace fs =  std::filesystem ;
+#include "headers/handSome.hpp"
+#include "headers/headers.hpp"
+
+
+
 int main() {
-    HandsomeServer server ;
-    server.setStaticRouteFolder("/handsome/src/templates");
-    server.route("/" , [&server](){
-        server.sendFile("src/templates/index.html");
+    // Create server
+    HandsomeServer app;
+
+    // Route to send all user data in JSON format
+    app.route("/", [&app](requestHeader req, responseHeader res) {
+        app.sendFile("src/templates/index.html");
     });
-    // listen on port  9000
-    server.listen(9000)
-    .startServer();
 
+    // Start the server on port 9000
+    app.listen(9000)
+       .startServer();
 
-    return 0 ; 
+    return 0;
 }

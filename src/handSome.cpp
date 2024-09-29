@@ -6,6 +6,8 @@
 #include "headers/httpServer.hpp"
 #include "headers/allContentTypeHeader.hpp"
 #include <filesystem>
+#include <typeinfo> // Required for typeid
+
 using std::string;
 namespace fs =  std::filesystem ;
 // Create a global or static instance of the httpServer
@@ -27,9 +29,9 @@ HandsomeServer& HandsomeServer::startServer() {
     httpserver.run();
     return *this; // Enable method chaining
 };
-void HandsomeServer::route(const std::string& routeName, const std::function<void()>& lambdaExcuter){
+void HandsomeServer::route(const std::string& routeName, const std::function<void(requestHeader , responseHeader)>& lambdaExcuter){
     // Create new HTTP route 
-    httpserver.setRoute(Route(routeName , lambdaExcuter));
+    httpserver.setRoute(Route(routeName , lambdaExcuter)) ;
 } 
 void HandsomeServer::sendFile( const std::string& filePath) {
     // send file using HTTP SERVER
@@ -52,7 +54,7 @@ void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
                     std::string extractRoutName = clonePath.substr(index + sizeof("templates")); // Adjust the index calculation
                     std::string extractPathOfStaticFile = fs::current_path().string() + "/" + clonePath; // get the full path of the file
                     // Use a copy of tempText to capture in the lambda
-                    route(extractRoutName, [this, extractPathOfStaticFile]() {
+                    route(extractRoutName, [this, extractPathOfStaticFile](requestHeader , responseHeader) {
                         sendFile(extractPathOfStaticFile);
                     });
             }
@@ -61,6 +63,16 @@ void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
         std::cerr << "Directory does not exist or is not a directory: " << directoryPath << std::endl;
     }
 }
+
+void HandsomeServer::sendText(const std::string& text){
+
+    httpserver.sendResponse(httpserver.getClientSocketClone() , text, "200 OK" , "text/html" );
+} ;
+void HandsomeServer::sendJson(const std::string& json){
+
+    httpserver.sendResponse(httpserver.getClientSocketClone() ,json , "200 OK" , "application/json" );
+} ; 
+
 void HandsomeServer::setStaticRouteFolder(const std::string& folderPath) {
     staticRootFolderPath = folderPath ;
 }
