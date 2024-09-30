@@ -5,3 +5,4 @@
 # Ignore all contents of the lib directory but keep the directory itself
 /lib/*
 !/lib/.gitkeep  # This will ensure the directory is not empty and can be tracked
+
