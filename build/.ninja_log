@@ -1,6 +1,0 @@
-# ninja log v5
-1	547	1727727318570430641	CMakeFiles/handsomelib.dir/src/httpServerCpp/allContentTypeHeader.cpp.o	56c0838d00dcead7
-1	980	1727727319002427085	CMakeFiles/handsomelib.dir/src/httpServerCpp/httpServer.cpp.o	6e5f6a9f22c37453
-1	1144	1727727319167425727	CMakeFiles/handsomelib.dir/src/handSomeCpp/handSome.cpp.o	a3d9ab7985e04812
-1144	1237	1727727319245425085	libhandsomelib.a	21af9e697804695d
-1	92	1727727516011805640	/home/dev/development/handsome/lib/libhandsomelib.a	ed097f58f4d5fb92

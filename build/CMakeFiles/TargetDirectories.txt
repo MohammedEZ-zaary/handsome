@@ -1,3 +1,0 @@
-/home/dev/development/handsome/build/CMakeFiles/handsomelib.dir
-/home/dev/development/handsome/build/CMakeFiles/edit_cache.dir
-/home/dev/development/handsome/build/CMakeFiles/rebuild_cache.dir
