@@ -3,10 +3,10 @@
 
 #include <string>
 #include <functional>
-#include "httpServer.hpp"
-#include "route.hpp"
-#include "headers.hpp" 
-#include "allContentTypeHeader.hpp"
+#include "../httpServer/httpServer.hpp"
+#include "../httpServer/route.hpp"
+#include "../httpServer/headers.hpp"
+#include "../httpServer/allContentTypeHeader.hpp"
 
 class HandsomeServer {
     private:

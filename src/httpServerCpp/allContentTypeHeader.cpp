@@ -1,7 +1,8 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include "headers/allContentTypeHeader.hpp"
+#include "../../include/httpServer/allContentTypeHeader.hpp" 
+
 // Function to get content type header based on the file path
 std::string ContentTypeMapper::getContentTypeHeader(const std::string& filePath) {
     std::string extension = extractFileExtension(filePath); // Extract the extension

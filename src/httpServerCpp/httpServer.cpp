@@ -6,9 +6,9 @@
 #include <fstream>
 #include <sstream>
 #include <map>
-#include "headers/httpServer.hpp"
-#include "headers/route.hpp"
-#include "headers/headers.hpp"
+#include "../../include/httpServer/httpServer.hpp"
+#include "../../include/httpServer/route.hpp"
+#include "../../include/httpServer/headers.hpp"
 
 using std::string;
 using std::stringstream;

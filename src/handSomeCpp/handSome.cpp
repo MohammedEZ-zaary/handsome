@@ -1,12 +1,12 @@
 #include <iostream>
 #include <string>
 #include <functional> 
-#include "headers/handSome.hpp"
-#include "headers/route.hpp"
-#include "headers/httpServer.hpp"
-#include "headers/allContentTypeHeader.hpp"
 #include <filesystem>
 #include <typeinfo> // Required for typeid
+#include "../../include/handSome/handSome.hpp"
+#include "../../include/httpServer/route.hpp"
+#include "../../include/httpServer/httpServer.hpp"
+#include "../../include/httpServer/allContentTypeHeader.hpp"
 
 using std::string;
 namespace fs =  std::filesystem ;

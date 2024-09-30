@@ -13,12 +13,6 @@
                 "${workspaceFolder}/src/allContentTypeHeader.cpp",
                 "-o",
                 "${workspaceFolder}/build/http_server",
-                "-I/usr/local/include/mongocxx/v_noabi",
-                "-I/usr/local/include/bsoncxx/v_noabi",
-                "-I/home/dev/Downloads/mongo-cxx-driver-r3.10.1/build/src/bsoncxx/third_party/_deps/core-install/include", // Add this line
-                "-L/usr/local/lib",
-                "-lmongocxx",
-                "-lbsoncxx"
             ],
             "group": "build",
             "problemMatcher": [
@@ -29,7 +23,7 @@
         {
             "label": "Run http_server",
             "type": "shell",
-            "command": "${workspaceFolder}/build/http_server",
+            "command": "${workspaceFolder}/build/handsomelib",
             "group": "test",
             "dependsOn": "C/C++: g++ build active file",
             "problemMatcher": [],

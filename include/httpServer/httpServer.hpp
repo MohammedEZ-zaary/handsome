@@ -19,6 +19,8 @@ private:
     Route getRoute(const std::string& routeName);
 public:
     httpServer() : port(0), clientSocketClone(-1), serverSocketClone(-1) {} // Constructor for initialization
+
+    void handleClient(int clientSocket) ; 
     int getClientSocketClone() const; // Returns the client socket clone
     int getServerSocketClone() const; // Returns the server socket clone
     void run();                     // Starts the server

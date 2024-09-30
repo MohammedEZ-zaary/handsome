@@ -1,30 +1,22 @@
-# Minimum CMake version required
 cmake_minimum_required(VERSION 3.10)
 
-# Project name and language
-project(HttpServer CXX)
+project(Handsome VERSION 1.0) 
 
-# Set the C++ standard to C++17 (or higher if required)
+#Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Add the include directories (adjust the path to your actual MongoDB installation)
-include_directories(/usr/local/include/mongocxx/v_noabi)
-include_directories(/usr/local/include/bsoncxx/v_noabi)
-include_directories(/home/dev/Downloads/mongo-cxx-driver-r3.10.1/build/src/bsoncxx/third_party/_deps/core-install/include)
-
-# Add the executable target (replace 'http_server.cpp' with your actual source files)
-add_executable(http_server 
-    src/main.cpp
-    src/httpServer.cpp
-    src/handSome.cpp
-    src/allContentTypeHeader.cpp
+# Set the output directory for the built library
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+# Add the library target
+add_library(handsomelib STATIC
+    src/httpServerCpp/allContentTypeHeader.cpp
+    src/httpServerCpp/httpServer.cpp
+    src/handSomeCpp/handSome.cpp
 )
 
-# Link directories and libraries
-link_directories(/usr/local/lib)
-target_link_libraries(http_server
-    PRIVATE
-    mongocxx
-    bsoncxx
+# Specify include directories for the library
+target_include_directories(handsomelib PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
 )
