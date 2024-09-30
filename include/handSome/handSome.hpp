@@ -18,7 +18,7 @@ class HandsomeServer {
         // Sends a file's content in response to a request
         void sendFile(const std::string& filePath);
         // create new route using route method
-        void route(const std::string& routeName, const std::function<void(requestHeader, responseHeader)>& lambdaExcuter) ; 
+        void route(const std::string& routeName, const std::function<void(const requestHeader&, const responseHeader&)>& lambdaExcuter) ; 
         void sendText(const std::string& text) ;
         // edit static root folder
         void setStaticRouteFolder(const std::string& folderPath) ;

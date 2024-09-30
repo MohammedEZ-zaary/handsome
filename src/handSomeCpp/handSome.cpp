@@ -29,7 +29,7 @@ HandsomeServer& HandsomeServer::startServer() {
     httpserver.run();
     return *this; // Enable method chaining
 };
-void HandsomeServer::route(const std::string& routeName, const std::function<void(requestHeader , responseHeader)>& lambdaExcuter){
+void HandsomeServer::route(const std::string& routeName, const std::function<void(const requestHeader& , const responseHeader&)>& lambdaExcuter){
     // Create new HTTP route 
     httpserver.setRoute(Route(routeName , lambdaExcuter)) ;
 } 

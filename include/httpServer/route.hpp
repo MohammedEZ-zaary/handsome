@@ -10,9 +10,9 @@
 class Route {
 public:
     std::string routeName;
-    std::function<void(requestHeader , responseHeader)> executor;  // Change to take httpServer& as an argument
+    std::function<void(const requestHeader& , const responseHeader&)> executor;  // Change to take httpServer& as an argument
 
-    Route(const std::string& routeName, const std::function<void(requestHeader , responseHeader)>& executor) {
+    Route(const std::string& routeName, const std::function<void(const requestHeader& , const responseHeader&)>& executor) {
         this->routeName = routeName ; 
         this->executor = executor ; 
     }

@@ -94,7 +94,7 @@ void httpServer::run() {
 
     // Listen for connections
     // must edit 10  to somthing much more heigher
-    if (listen(serverSocket, 10) < 0) {
+    if (listen(serverSocket, 100) < 0) {
         std::cerr << "Failed to listen on socket" << endl;
         close(serverSocket);
         return; // Early exit on error
@@ -129,7 +129,7 @@ void httpServer::run() {
         for (const auto& pair : parseHttpHeaderRequest(buffer)) {
             if(pair.first == "Request-Line"){
                 Route routeClone =   getRoute(extractRoute(pair.second)) ;
-                routeClone.executor(req  , res) ;
+                routeClone.executor(req&  , res&) ;
             }
         }
         // Close client connection
