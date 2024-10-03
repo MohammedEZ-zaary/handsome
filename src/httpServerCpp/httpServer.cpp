@@ -7,17 +7,20 @@
 #include <sstream>
 #include <map>
 #include "../../include/httpServer/httpServer.hpp"
-#include "../../include/httpServer/route.hpp"
-#include "../../include/httpServer/headers.hpp"
+
+// test multithreading 
+#include <thread>
+#include <mutex>
+std::mutex socketMutex;
 
 using std::string;
 using std::stringstream;
 using std::cout;
 using std::endl;
 
-// creating inctance of of response and request HTTP  header
+// // creating inctance of of response and request HTTP  header
+// // #bug must  fix
 requestHeader req ;
-responseHeader res ; 
 //
 string httpServer::trim(const std::string &str) {
     // Function to trim whitespace from strings
@@ -26,6 +29,7 @@ string httpServer::trim(const std::string &str) {
     size_t last = str.find_last_not_of(' ');
     return str.substr(first, (last - first + 1));
 } ;
+
 string httpServer::extractRoute(const string& requestLine) {
     // Function to extract the route from the request line
     std::istringstream stream(requestLine);
@@ -70,75 +74,109 @@ std::map<std::string, std::string> httpServer::parseHTTPRequest(const std::strin
     return headers;
 }
 void httpServer::run() {
-    // Create server socket
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1) {
-        std::cerr << "Failed to create socket" << endl;
+    if (!createSocket()) {
         return; // Early exit on error
     }
 
-    serverSocketClone = serverSocket;
+    if (!bindSocket()) {
+        return; // Early exit on error
+    }
 
-    // Defining server
+    if (!listenForConnections()) {
+        return; // Early exit on error
+    }
+
+    cout << "Server is listening on port " << port << endl;
+
+    acceptConnections(); // Accept client connections
+}
+
+bool httpServer::createSocket() {
+    serverSocketClone = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocketClone == -1) {
+        std::cerr << "Failed to create socket" << endl;
+        return false; // Indicate failure
+    }
+    return true; // Indicate success
+}
+
+bool httpServer::bindSocket() {
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port); // Use the member variable directly
     serverAddress.sin_addr.s_addr = INADDR_ANY; // Listen on all interfaces
 
-    // Bind server socket
-    if (bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
+    if (bind(serverSocketClone, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
         std::cerr << "Failed to bind socket" << endl;
-        close(serverSocket);
-        return; // Early exit on error
+        close(serverSocketClone);
+        return false; // Indicate failure
     }
+    return true; // Indicate success
+}
 
-    // Listen for connections
-    // must edit 10  to somthing much more heigher
-    if (listen(serverSocket, 100) < 0) {
+bool httpServer::listenForConnections() {
+    // Change 100 to a more suitable backlog size if necessary
+    if (listen(serverSocketClone, 100) < 0) {
         std::cerr << "Failed to listen on socket" << endl;
-        close(serverSocket);
-        return; // Early exit on error
+        close(serverSocketClone);
+        return false; // Indicate failure
     }
+    return true; // Indicate success
+}
 
-    cout << "Server is listening on port " << port << endl;
-    // Accepting client connections
+void httpServer::acceptConnections() {
     while (true) {
-        int clientSocket = accept(serverSocket, nullptr, nullptr);
+        int clientSocket = accept(serverSocketClone, nullptr, nullptr);
         if (clientSocket < 0) {
             std::cerr << "Failed to accept client connection" << endl;
             continue; // Try to accept the next connection
         }
+        
 
-        clientSocketClone = clientSocket;
+        clientSocketClone = clientSocket; 
+        
+        processClientRequest(clientSocket); // Create a new thread to handle the client connection
+        close(clientSocket); // Close client connection when done
+        // multithreading Bug #3
+        // std::thread handleClient([this , clientSocket](){
+            // processClientRequest(clientSocket); // Create a new thread to handle the client connection
+        // }) ;
+        // handleClient.detach();
+    }
+}
 
-        // Receiving data from client
-        char buffer[1024] = {0};
-        int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-        if (bytesReceived < 0) {
-            std::cerr << "Error receiving data from client" << endl;
-            close(clientSocket);
-            continue; // Try to accept the next connection
-        }
-
-        for (const auto& pair : parseHttpHeaderRequest(buffer)) {
-            // set response Header 
-            req.setHeader(pair.first , pair.second) ; 
-        } 
-
-        // Check client request
-        for (const auto& pair : parseHttpHeaderRequest(buffer)) {
-            if(pair.first == "Request-Line"){
-                Route routeClone =   getRoute(extractRoute(pair.second)) ;
-                routeClone.executor(req&  , res&) ;
-            }
-        }
-        // Close client connection
-        close(clientSocket);
+void httpServer::processClientRequest(int clientSocket) {
+    // std::lock_guard<std::mutex> lock(socketMutex);
+    char buffer[1024] = {0};
+    int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (bytesReceived < 0) {
+        std::cerr << "Error receiving data from client" << endl;
+        return; 
     }
 
-    // Close server socket (this line will never be reached in the current loop)
-    close(serverSocket);
+    auto headers = parseHttpHeaderRequest(buffer);
+
+    // std::lock_guard<std::mutex> lock(routesMutex); // Lock the mutex
+    // std::lock_guard<std::mutex> routesLock(routesMutex) ;
+    for (const auto& pair : headers) {
+
+        handleHeader(pair.first, pair.second);
+        req.setHeader(pair.first, pair.second);
+    }
+    // Check client request
+    for (const auto& pair : headers) {
+        if (pair.first == "Request-Line") {
+            // search for Route for example: /login
+            Route routeClone = getRoute(extractRoute(pair.second));
+            // excute the the content of the route
+            routeClone.executor(req);
+            // clean Header
+            req.cleanUpfunction();
+        }
+    }
+
 }
+
 std::string httpServer::readFileContent(const std::string& filePath) {
     std::ifstream file(filePath);
     if (!file) {
@@ -150,13 +188,8 @@ std::string httpServer::readFileContent(const std::string& filePath) {
     buffer << file.rdbuf(); // Read file contents into the stringstream
     return buffer.str(); // Return the file content
 }
-void httpServer::sendResponse(int clientSocket, const std::string& content, const std::string& status, const std::string& contentType) {
-    res.setHeader("Content-Type" , contentType ) ;
-    res.setHeader("Content-Length" ,  std::to_string(content.size())) ;
-    res.setHeader("Connection" ,  "close") ;
-    std::string resAsString = res.getResponseString("200 OK" , content) ; 
-    send(clientSocket,resAsString.c_str() , resAsString.size(), 0);
-}
+
+
 void httpServer::portListen(int port) {
     this->port = port; // Use 'this' pointer for clarity
 }
@@ -164,9 +197,11 @@ std::map<std::string, std::string> httpServer::parseHttpHeaderRequest(const std:
     return parseHTTPRequest(request); // Forward to the other method
 }
 int httpServer::getClientSocketClone() const{
+    // std::lock_guard<std::mutex> lock(socketMutex);            
     return clientSocketClone;
 }
 int httpServer::getServerSocketClone() const  {
+    // std::lock_guard<std::mutex> lock(socketMutex);            
     return serverSocketClone;
 }
 // Function to add a route
@@ -177,14 +212,27 @@ void httpServer::setRoute(const Route& route) {
 }
 // Function to get a route by name
 Route httpServer::getRoute(const std::string& routeName)  {
+    
     for(const Route& route : routes){
         if(route.routeName == routeName) {
             return route ;
         }
     }
-    return Route("404", [this](requestHeader req , responseHeader res) {
-        sendResponse(getClientSocketClone(), "<h1>Not Found Error 404</h1>", "<h1> 404 Not Found</h1>", "text/html");
+    return Route("404", [this](const requestHeader req) {
+        // fix bug #2 
     }); 
-    // If the route is not found, return a default route
-    // return Route("404", "<h1>404 - Route Not Found</h1>" , );
+    
+}
+void httpServer::handleHeader(const std::string& key ,const std::string& value) {
+    // add Other 
+    if(key == "Body"){
+        req.body = trim(value) ; 
+    }
+}
+void httpServer::closeSocket() {
+    if (serverSocketClone != -1) {
+        close(serverSocketClone);  // Close the server socket
+        serverSocketClone = -1;    // Reset the socket descriptor
+        std::cout << "Socket closed successfully." << std::endl;
+    }
 }
