@@ -4,29 +4,26 @@
 #include <string>
 #include <functional>
 #include "../httpServer/httpServer.hpp"
-#include "../httpServer/route.hpp"
-#include "../httpServer/headers.hpp"
-#include "../httpServer/allContentTypeHeader.hpp"
 
 class HandsomeServer {
-    private:
-        std::string staticRootFolderPath = "src/templates"; // default value 
-    public:
-        HandsomeServer();
+private:
+    httpServer httpserver; // Instance of the httpServer class
+    std::string staticRootFolderPath  ; // Path to the static files
 
-        void serveStaticFile(const std::string& p) ; 
-        // Sends a file's content in response to a request
-        void sendFile(const std::string& filePath);
-        // create new route using route method
-        void route(const std::string& routeName, const std::function<void(const requestHeader&, const responseHeader&)>& lambdaExcuter) ; 
-        void sendText(const std::string& text) ;
-        // edit static root folder
-        void setStaticRouteFolder(const std::string& folderPath) ;
-        void sendJson(const std::string& json) ;
-        // Sets the port number for the server and enables method chaining
-        HandsomeServer& listen(int port);
-        // Starts the server
-        HandsomeServer& startServer();
+public:
+    HandsomeServer(); // Constructor
+
+    HandsomeServer& listen(int port); // Set port and enable method chaining
+    HandsomeServer& startServer(); // Start the server and enable method chaining
+
+    // Define a route with a lambda function executor
+    void route(const std::string& routeName, const std::function<void(const requestHeader&,  responseHeader&)>& lambdaExecutor);
+    // Serve static files from a directory
+    void serveStaticFile(const std::string& staticFolderName);
+    // Set the static route folder path
+    void setStaticRouteFolder(const std::string& folderPath);
+    std::string getStaticRootFolderPath()  ;
+
 };
 
-#endif // HANDSOMESERVER_HPP
+#endif

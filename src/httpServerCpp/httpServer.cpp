@@ -7,17 +7,21 @@
 #include <sstream>
 #include <map>
 #include "../../include/httpServer/httpServer.hpp"
-#include "../../include/httpServer/route.hpp"
-#include "../../include/httpServer/headers.hpp"
+#include "../../include/multithreading/ThreadPool.hpp" // Include your ThreadPool header
+
+// test multithreading 
+#include <thread>
+#include <mutex>
+std::mutex socketMutex;
 
 using std::string;
 using std::stringstream;
 using std::cout;
 using std::endl;
 
-// creating inctance of of response and request HTTP  header
+// // creating inctance of of response and request HTTP  header
+// // #bug must  fix
 requestHeader req ;
-responseHeader res ; 
 //
 string httpServer::trim(const std::string &str) {
     // Function to trim whitespace from strings
@@ -26,6 +30,7 @@ string httpServer::trim(const std::string &str) {
     size_t last = str.find_last_not_of(' ');
     return str.substr(first, (last - first + 1));
 } ;
+
 string httpServer::extractRoute(const string& requestLine) {
     // Function to extract the route from the request line
     std::istringstream stream(requestLine);
@@ -70,93 +75,147 @@ std::map<std::string, std::string> httpServer::parseHTTPRequest(const std::strin
     return headers;
 }
 void httpServer::run() {
-    // Create server socket
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1) {
-        std::cerr << "Failed to create socket" << endl;
+    if (!createSocket()) {
         return; // Early exit on error
     }
 
-    serverSocketClone = serverSocket;
+    if (!bindSocket()) {
+        return; // Early exit on error
+    }
 
-    // Defining server
+    if (!listenForConnections()) {
+        return; // Early exit on error
+    }
+    std::cout << "\033[1;32m[+] Server is listening on port " << port << "\033[0m\n";
+    acceptConnections(); // Accept client connections
+}
+
+bool httpServer::createSocket() {
+    serverSocketClone = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocketClone == -1) {
+        std::cerr << "Failed to create socket" << endl;
+        exit(EXIT_FAILURE);
+        return false; // Indicate failure
+    }
+    // Set the SO_REUSEADDR option to allow reusing the port
+    int opt = 1;
+    if (setsockopt(serverSocketClone, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        std::cerr << "Failed to set socket options" << endl;
+        close(serverSocketClone);
+        return false; // Indicate failure
+    }
+
+    return true; // Indicate success
+}
+
+bool httpServer::bindSocket() {
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port); // Use the member variable directly
     serverAddress.sin_addr.s_addr = INADDR_ANY; // Listen on all interfaces
 
-    // Bind server socket
-    if (bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
+    if (bind(serverSocketClone, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
         std::cerr << "Failed to bind socket" << endl;
-        close(serverSocket);
-        return; // Early exit on error
+        close(serverSocketClone);
+        return false; // Indicate failure
     }
+    return true; // Indicate success
+}
 
-    // Listen for connections
-    // must edit 10  to somthing much more heigher
-    if (listen(serverSocket, 100) < 0) {
+bool httpServer::listenForConnections() {
+    // Change 100 to a more suitable backlog size if necessary
+    if (listen(serverSocketClone, 50) < 0) {
         std::cerr << "Failed to listen on socket" << endl;
-        close(serverSocket);
-        return; // Early exit on error
+        close(serverSocketClone);
+        return false; // Indicate failure
     }
+    return true; // Indicate success
+}
 
-    cout << "Server is listening on port " << port << endl;
-    // Accepting client connections
+// single thread
+void httpServer::acceptConnections() {
     while (true) {
-        int clientSocket = accept(serverSocket, nullptr, nullptr);
+        int clientSocket = accept(serverSocketClone, nullptr, nullptr);
         if (clientSocket < 0) {
             std::cerr << "Failed to accept client connection" << endl;
             continue; // Try to accept the next connection
         }
+        
+        // Clone clientSocket to use it in responseHeader 
+        clientSocketClone = clientSocket; 
 
-        clientSocketClone = clientSocket;
-
-        // Receiving data from client
-        char buffer[1024] = {0};
-        int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-        if (bytesReceived < 0) {
-            std::cerr << "Error receiving data from client" << endl;
-            close(clientSocket);
+        processClientRequest(clientSocket); // Create a new thread to handle the client connection
+        close(clientSocket); // Close client connection when done
+     
+    }
+}
+// multithreading #bug
+/*
+void httpServer::acceptConnections() {
+    while (true) {
+        int clientSocket = accept(serverSocketClone, nullptr, nullptr);
+        if (clientSocket < 0) {
+            std::cerr << "Failed to accept client connection" << std::endl;
             continue; // Try to accept the next connection
         }
-
-        for (const auto& pair : parseHttpHeaderRequest(buffer)) {
-            // set response Header 
-            req.setHeader(pair.first , pair.second) ; 
-        } 
-
-        // Check client request
-        for (const auto& pair : parseHttpHeaderRequest(buffer)) {
-            if(pair.first == "Request-Line"){
-                Route routeClone =   getRoute(extractRoute(pair.second)) ;
-                routeClone.executor(req&  , res&) ;
-            }
-        }
-        // Close client connection
-        close(clientSocket);
+        // Use the thread pool to handle client requests
+        threadPool.enqueue([this, clientSocket]() {
+            clientSocketClone = clientSocket; 
+            processClientRequest(clientSocket); // Process the client's request
+            close(clientSocket); // Close client connection when done
+        });
+    }
+}
+*/
+void httpServer::processClientRequest(int clientSocket) {
+    char buffer[1024] = {0};
+    int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (bytesReceived < 0) {
+        std::cerr << "Error receiving data from client" << endl;
+        return; 
     }
 
-    // Close server socket (this line will never be reached in the current loop)
-    close(serverSocket);
+    auto headers = parseHttpHeaderRequest(buffer);
+
+    for (const auto& pair : headers) {
+
+        handleRequestHeader(pair.first , pair.second);
+        req.setHeader(pair.first, pair.second);
+    }
+    // give value  to Request  Body if the method is POST request
+    for (const auto& pair : headers) {
+            if(pair.first == "Body") {
+                handleRequestBody(pair.second);
+            }
+    }
+
+    // Check client request
+    for (const auto& pair : headers) {
+        if (pair.first == "Request-Line") {
+            // search for Route for example: /login
+            Route routeClone = getRoute(extractRoute(pair.second));
+            // excute the the content of the route
+            routeClone.executor(req);
+            // clean Header
+            req.cleanUpfunction();
+        }
+    }
+
 }
+
 std::string httpServer::readFileContent(const std::string& filePath) {
     std::ifstream file(filePath);
     if (!file) {
         std::cerr << "Unable to open the file!" << endl;
         return "";
     }
-    
+   
     stringstream buffer;
     buffer << file.rdbuf(); // Read file contents into the stringstream
     return buffer.str(); // Return the file content
 }
-void httpServer::sendResponse(int clientSocket, const std::string& content, const std::string& status, const std::string& contentType) {
-    res.setHeader("Content-Type" , contentType ) ;
-    res.setHeader("Content-Length" ,  std::to_string(content.size())) ;
-    res.setHeader("Connection" ,  "close") ;
-    std::string resAsString = res.getResponseString("200 OK" , content) ; 
-    send(clientSocket,resAsString.c_str() , resAsString.size(), 0);
-}
+
+
 void httpServer::portListen(int port) {
     this->port = port; // Use 'this' pointer for clarity
 }
@@ -171,20 +230,90 @@ int httpServer::getServerSocketClone() const  {
 }
 // Function to add a route
 void httpServer::setRoute(const Route& route) {
-    // infinte route
+    if(route.routeName == "/404"){
+        Error404Page = route ;
+        routeCount++;
+        return ;
+    }
+
     routes.push_back(route);
     routeCount++;
 }
 // Function to get a route by name
 Route httpServer::getRoute(const std::string& routeName)  {
-    for(const Route& route : routes){
-        if(route.routeName == routeName) {
+    // search for Name of The client Route
+    for(const Route& route : routes ){
+        if(route.routeName == req.uri && req.uri != "/404") {
             return route ;
         }
     }
-    return Route("404", [this](requestHeader req , responseHeader res) {
-        sendResponse(getClientSocketClone(), "<h1>Not Found Error 404</h1>", "<h1> 404 Not Found</h1>", "text/html");
-    }); 
-    // If the route is not found, return a default route
-    // return Route("404", "<h1>404 - Route Not Found</h1>" , );
+
+    return Error404Page ;
+    
+};
+void httpServer::handleRequestHeader(const std::string& key , const std::string& value  ) { 
+    // handle Request Header 
+    // arr[0]  , arr[1], arr[2]
+    // [Method , Path or URI , http Version]
+    std::string arr[3] ;
+    if(key == "Request-Line"){
+        size_t firstSpace =  value.find(' ') ;
+        size_t lastSpace =  value.rfind(' ') ;
+        size_t questionMark = value.find('?'); // Find the '?'
+
+        arr[0] = value.substr(0 , firstSpace);
+        arr[2] = value.substr(lastSpace + 1  );
+        
+        if (questionMark != std::string::npos ) {
+            arr[1] = value.substr(firstSpace + 1, questionMark - (firstSpace + 1)); // Get the substring between first space and ?
+            // As we know the params are only accept it on GET PUT HEAD AND DELET
+            if(arr[0] != "POST") {
+                handleQueryParams(value) ;
+            }else {
+                std::cout << "\033[1;31m[!] Warning you cannot pass param in POST Method. \033[0m\n";
+                std::cout << "\033[1;34m[+] Try to Edit Route : " << arr[1] << "\033[0m\n";
+
+            }
+        } else {
+            arr[1] = value.substr(firstSpace + 1, value.find(' ', firstSpace + 1) - (firstSpace + 1)); // Handle case without '?'
+        }
+
+
+        req.method = arr[0];
+        req.uri  = arr[1] ;
+        req.version = arr[2]  ;
+    }
+
 }
+void httpServer::handleRequestBody(const std::string& value) {
+        // Those the only method that allow to accept body 
+        if(req.method == "POST" || req.method == "PUT" || req.method == "PATCH") {
+            req.body =  trim(value);
+        }else {
+            std::cout << "\033[1;31m[!] Warning your trying to send data in Body header using GET method. \033[0m\n";
+            std::cout << "\033[1;34m[+] Try to use POST method in Route " << req.uri << "\033[0m\n";
+        }
+}
+
+void httpServer::handleQueryParams(const std::string& value ) {
+    // handle query params if only method is not a POST request
+    size_t questionMark = value.find('?'); // Find the '?'
+    if (questionMark != std::string::npos) {
+        // Get the substring containing the parameters
+        std::string paramString = value.substr(questionMark + 1, value.find(' ', questionMark) - (questionMark + 1));
+        
+        // Split parameters by '&'
+        std::stringstream ss(paramString);
+        std::string item;
+        while (std::getline(ss, item, '&')) {
+            // Split key and value by '='
+            size_t equalsPos = item.find('=');
+            if (equalsPos != std::string::npos) {
+                std::string key = item.substr(0, equalsPos);
+                std::string value = item.substr(equalsPos + 1);
+                req.queryParams[key] = value; // Store in the map
+            }
+        }
+    }
+}
+
