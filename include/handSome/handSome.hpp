@@ -18,19 +18,8 @@ public:
 
     // Define a route with a lambda function executor
     void route(const std::string& routeName, const std::function<void(const requestHeader&,  responseHeader&)>& lambdaExecutor);
-
-    // Send a static file to the client
-    // void sendFile(const std::string& filePath);
-
     // Serve static files from a directory
     void serveStaticFile(const std::string& staticFolderName);
-
-    // Send plain text response
-    // void sendText(const std::string& text);
-
-    // Send JSON response
-    // void sendJson(const std::string& json);
-
     // Set the static route folder path
     void setStaticRouteFolder(const std::string& folderPath);
     std::string getStaticRootFolderPath()  ;

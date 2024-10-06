@@ -75,14 +75,9 @@ void responseHeader::setBody(const std::string& body) {
 }
 
 void responseHeader::sendData(const std::string& data) {
-    // setHeader("Content-Type" , "text/html" ) ;
-    // setHeader("Content-Length" ,  std::to_string(data.size())) ;
-    // setHeader("Connection" ,  "close") ;
-    // setStatusCode("200");
     setBody(data);
     setHeader("Content-Length", std::to_string(data.size()));
     std::string resAsString = getResponseString();
-    std::cout << resAsString << std::endl;
     send(serverRef->getClientSocketClone(), resAsString.c_str(), resAsString.size(), 0);
 }
 

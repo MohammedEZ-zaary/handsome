@@ -6,6 +6,8 @@
 #include <iostream>
 #include <functional>
 
+#include "../../include/multithreading/ThreadPool.hpp" // Include the ThreadPool header
+
 // Base class for headers
 class Header {
 protected:
@@ -16,7 +18,7 @@ public:
     std::string getHeader(const std::string& key) const ; 
     void printHeaders() const ;
 };
-
+// Request Header
 class requestHeader : public Header {
 public:
     std::string method; // GET POST DELETE PUT
@@ -33,7 +35,7 @@ public:
 private:
     void setDefaultValuesOfHeader() ;
 };
-
+// Route Class
 class Route {
 public:
     std::string routeName;
@@ -49,7 +51,9 @@ private:
     int clientSocketClone;          // Client socket
     int serverSocketClone;          // Server socket
     int routeCount = 0;
-    std::vector<Route> routes;  // Use a vector to store routes
+    Route Error404Page = Route("/404" , [this](requestHeader req){});
+    std::vector<Route> routes;      // Use a vector to store routes
+    ThreadPool threadPool;          // Thread pool for handling requests
 
     // Methods
     std::map<std::string, std::string> parseHttpHeaderRequest(const std::string& request);
@@ -57,14 +61,16 @@ private:
     std::string trim(const std::string& str);
     std::string extractRoute(const std::string& requestLine);
     Route getRoute(const std::string& routeName);
-    bool createSocket();  // Create the server socket
-    bool bindSocket();    // Bind the server socket to an address and port
-    bool listenForConnections(); // Listen for incoming client connections
-    void acceptConnections(); // Accept and process client connections
+    bool createSocket();             // Create the server socket
+    bool bindSocket();               // Bind the server socket to an address and port
+    bool listenForConnections();      // Listen for incoming client connections
+    void acceptConnections();         // Accept and process client connections
     void processClientRequest(int clientSocket); // Process each client request
-    void handleHeader(const std::string& key, const std::string& value);
+    void handleRequestBody(const std::string& value); 
+    void handleQueryParams(const std::string& value) ;
+
 public:
-    httpServer() : port(0), clientSocketClone(-1), serverSocketClone(-1) {} // Constructor for initialization
+    httpServer() : port(0), clientSocketClone(-1), serverSocketClone(-1), threadPool(std::thread::hardware_concurrency()) {} // Constructor for initialization
     void run();                     // Starts the server
     int getClientSocketClone() const; // Returns the client socket clone
     int getServerSocketClone() const; // Returns the server socket clone
@@ -73,9 +79,8 @@ public:
     void portListen(int port);      // Sets the port to listen on
     void setRoute(const Route& route);
     void serveStaticFile(const std::string& staticRootFolder, const std::function<void(const std::string&, const std::string&)>& callback);
-    void closeSocket();
+    void handleRequestHeader(const std::string&  , const std::string& ) ;
 };
-
 
 
 

@@ -36,10 +36,8 @@ void HandsomeServer::route(const std::string& routeName, const std::function<voi
     })) ;
 } 
 
-
 void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
     fs::path directoryPath = staticFolderName;
-    std::cout << "from serverStaticFile function : " << directoryPath << std::endl;
 
     // Ensure the directory exists and is indeed a directory
     if (fs::exists(directoryPath) && fs::is_directory(directoryPath)) {
@@ -59,7 +57,6 @@ void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
                     
                     // Full path of the static file
                     std::string extractPathOfStaticFile = fs::absolute(entry.path()).string();
-                    std::cout << extractRoutName << ": " << extractPathOfStaticFile << std::endl;
                     // Lambda to serve the file
                     route(extractRoutName, [this, extractPathOfStaticFile](const requestHeader& req, responseHeader& res) {
                         // Send the file as a response
@@ -69,19 +66,11 @@ void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
             }
         }
     } else {
-        std::cerr << "Directory does not exist or is not a directory: " << directoryPath << std::endl;
+        if(getStaticRootFolderPath() != "" ) {
+            std::cerr << "\033[1;31m[!] Please check the path of the static folders. the folder " << directoryPath << " Not Found" << "\033[0m\n";
+        }
     }
 }
-
-
-// void HandsomeServer::sendText(const std::string& text){
-
-//     httpserver.sendResponse(httpserver.getClientSocketClone() , text, "200 OK" , "text/html" );
-// } ;
-// void HandsomeServer::sendJson(const std::string& json){
-
-//     httpserver.sendResponse(httpserver.getClientSocketClone() ,json , "200 OK" , "application/json" );
-// } ; 
 
 void HandsomeServer::setStaticRouteFolder(const std::string& folderPath) {
     // insert new static folder path
@@ -89,6 +78,8 @@ void HandsomeServer::setStaticRouteFolder(const std::string& folderPath) {
     // add all files and folders to new Route
     serveStaticFile(getStaticRootFolderPath());
 }
+
 std::string HandsomeServer::getStaticRootFolderPath() {
         return staticRootFolderPath ;
 }
+
