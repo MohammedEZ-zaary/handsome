@@ -25,6 +25,7 @@ public:
     std::string uri;    // path 
     std::string version; // HTTP/1.1
     std::map<std::string, std::string> queryParams; // req.queryParams["id"] = "123" 
+    std::map<std::string, std::string> queryBody; // req.queryParams["id"] = "123" 
     std::string body;   // req.body = "{\"name\": \"John\"}";
     std::string ipAddress; // 192.168.11
     // init
@@ -68,6 +69,7 @@ private:
     void processClientRequest(int clientSocket); // Process each client request
     void handleRequestBody(const std::string& value); 
     void handleQueryParams(const std::string& value) ;
+    void handleQueryBody(const std::string& value ) ; 
 
 public:
     httpServer() : port(0), clientSocketClone(-1), serverSocketClone(-1), threadPool(std::thread::hardware_concurrency()) {} // Constructor for initialization
@@ -86,14 +88,16 @@ public:
 
 // Response Header Class
 class responseHeader : public Header {
-public:
+private:
     httpServer* serverRef; // Pointer to the httpServer
+public:
     std::string statusCode = "200 OK"; // Default status code
     std::string body; // Response body
 
     // Constructor that accepts a reference to the server
     responseHeader(httpServer* server)   ;
-
+    void setServerRef(httpServer& server) ;
+    httpServer* getServerRef() ;
     void setStatusCode(std::string status); 
 
     void setBody(const std::string& body); 
