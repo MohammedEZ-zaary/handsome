@@ -178,7 +178,6 @@ void httpServer::processClientRequest(int clientSocket) {
     auto headers = parseHttpHeaderRequest(buffer);
 
     for (const auto& pair : headers) {
-
         handleRequestHeader(pair.first , pair.second);
         req.setHeader(pair.first, pair.second);
     }
@@ -252,6 +251,7 @@ Route httpServer::getRoute(const std::string& routeName)  {
     
 };
 void httpServer::handleRequestHeader(const std::string& key , const std::string& value  ) { 
+
     // handle Request Header 
     // arr[0]  , arr[1], arr[2]
     // [Method , Path or URI , http Version]
@@ -282,6 +282,14 @@ void httpServer::handleRequestHeader(const std::string& key , const std::string&
         req.method = arr[0];
         req.uri  = arr[1] ;
         req.version = arr[2]  ;
+    }
+
+    // Handle Content-Type : application/x-www-form-urlencoded Body Data
+    if(key == "Body"){
+        // arr[0] = Method POST , PUT ...
+        if(!value.empty()) {
+            handleQueryBody(value) ;
+        }
     }
 
 }
@@ -317,3 +325,17 @@ void httpServer::handleQueryParams(const std::string& value ) {
     }
 }
 
+void httpServer::handleQueryBody(const std::string& value) {
+        // Split parameters by '&'
+        std::stringstream ss(value);
+        std::string item;
+        while (std::getline(ss, item, '&')) {
+            // Split key and value by '='
+            size_t equalsPos = item.find('=');
+            if (equalsPos != std::string::npos) {
+                std::string key = item.substr(0, equalsPos);
+                std::string value = item.substr(equalsPos + 1);
+                req.queryBody[key] = value; // Store in the map
+            }
+        }
+    }

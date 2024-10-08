@@ -1,6 +1,8 @@
 /test
-/lib/handsomelib.a
+/lib
 /.vscode
 /templates
 /build
 plan.md
+/build.sh
+

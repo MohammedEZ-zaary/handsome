@@ -41,6 +41,7 @@ void requestHeader::cleanUpfunction() {
         this->version = "";
         this->headers.clear();
         this->queryParams.clear();
+        this->queryBody.clear();
         this->body = "";
         this->ipAddress = "";
         requestHeader::setDefaultValuesOfHeader();
@@ -78,14 +79,15 @@ void responseHeader::sendData(const std::string& data) {
     setBody(data);
     setHeader("Content-Length", std::to_string(data.size()));
     std::string resAsString = getResponseString();
-    send(serverRef->getClientSocketClone(), resAsString.c_str(), resAsString.size(), 0);
+    
+    send(getServerRef()->getClientSocketClone(), resAsString.c_str(), resAsString.size(), 0);
 }
 
 void responseHeader::sendFile(const std::string& filePath) {
     // add Error Handler
     ContentTypeMapper contentType ;
     std::string CONTENT_TYPE_SELECTOR = contentType.getContentTypeHeader(filePath); // return text/html or application/json it deppend on file format  
-    std::string data = serverRef->readFileContent(filePath) ;
+    std::string data = getServerRef()->readFileContent(filePath) ;
     setHeader("Content-Type" , CONTENT_TYPE_SELECTOR ) ;
     setHeader("Connection" ,  "close") ;
     setHeader("Content-Length", std::to_string(data.size()));
@@ -93,7 +95,7 @@ void responseHeader::sendFile(const std::string& filePath) {
     // read content of file and put it on body Header
     setBody(data);
     std::string resAsString = getResponseString();
-    send(serverRef->getClientSocketClone(), resAsString.c_str(), resAsString.size(), 0);
+    send(getServerRef()->getClientSocketClone(), resAsString.c_str(), resAsString.size(), 0);
 }
 
 std::string  responseHeader::getResponseString() {
@@ -111,4 +113,12 @@ std::string  responseHeader::getResponseString() {
         responseStream << this->body;
     }
     return responseStream.str();
+}
+
+void responseHeader::setServerRef(httpServer& server) {
+    serverRef = &server ;
+}
+
+httpServer* responseHeader::getServerRef() {
+    return serverRef ;
 }
