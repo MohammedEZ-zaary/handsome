@@ -70,7 +70,11 @@
         "thread": "cpp",
         "valarray": "cpp",
         "shared_mutex": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "csignal": "cpp",
+        "coroutine": "cpp",
+        "list": "cpp",
+        "set": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
