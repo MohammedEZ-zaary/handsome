@@ -114,11 +114,6 @@ std::string  responseHeader::getResponseString() {
     }
     return responseStream.str();
 }
-
-void responseHeader::setServerRef(httpServer& server) {
-    serverRef = &server ;
-}
-
 httpServer* responseHeader::getServerRef() {
     return serverRef ;
 }

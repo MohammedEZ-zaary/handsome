@@ -23,8 +23,14 @@ HandsomeServer& HandsomeServer::listen(int port) {
     httpserver.portListen(port);
     return *this; // Enable method chaining
 };
-HandsomeServer& HandsomeServer::startServer() {
+HandsomeServer& HandsomeServer::startServer(bool multi_thread_status) {
     // Start the server
+    if(multi_thread_status){
+        // Which is the default value
+        httpserver.MULTI_THREAD = true ;
+    }else {
+        httpserver.MULTI_THREAD = false ;
+    }
     httpserver.run();
     return *this; // Enable method chaining
 };
@@ -35,7 +41,6 @@ void HandsomeServer::route(const std::string& routeName, const std::function<voi
         lambdaExcuter(req , res);
     })) ;
 } 
-
 void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
     fs::path directoryPath = staticFolderName;
 
@@ -71,15 +76,16 @@ void HandsomeServer::serveStaticFile(const std::string& staticFolderName) {
         }
     }
 }
-
 void HandsomeServer::setStaticRouteFolder(const std::string& folderPath) {
     // insert new static folder path
     staticRootFolderPath = folderPath ;
     // add all files and folders to new Route
-    serveStaticFile(getStaticRootFolderPath());
+    HandsomeServer::serveStaticFile(getStaticRootFolderPath());
 }
-
 std::string HandsomeServer::getStaticRootFolderPath() {
         return staticRootFolderPath ;
 }
-
+std::string HandsomeServer::readFileContent(const std::string& filePath) {
+    //  read files like javascript , html , css ...
+    return  httpserver.readFileContent(filePath);
+}

@@ -16,7 +16,6 @@ add_library(handsomelib STATIC
     src/httpServerCpp/httpServer.cpp
     src/httpServerCpp/headers.cpp
     src/handSomeCpp/handSome.cpp
-    src/multithreading/threadPool.cpp
 )
 
 # Specify include directories for the library
