@@ -2,7 +2,6 @@
 #include <string>
 #include <functional> 
 #include <filesystem>
-#include <typeinfo> // Required for typeid
 #include "../../include/handSome/handSome.hpp"
 #include "../../include/httpServer/httpServer.hpp"
 #include "../../include/httpServer/allContentTypeHeader.hpp"
@@ -18,6 +17,7 @@ HandsomeServer::HandsomeServer() {
     // Create a global or static instance of the httpServer
     httpServer httpserver; // Adjust this based on your design
 };
+
 HandsomeServer& HandsomeServer::listen(int port) {
     // Set port number
     httpserver.portListen(port);

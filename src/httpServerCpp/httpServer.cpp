@@ -11,7 +11,6 @@
 
 using std::string;
 using std::stringstream;
-using std::cout;
 using std::endl;
 
 // creating inctance of of response and request HTTP  header
