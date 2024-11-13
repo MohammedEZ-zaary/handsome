@@ -4,13 +4,15 @@
         {
             "label": "build_handsome_library",
             "type": "shell",
-            "command": "./Hashtag/backend/devBuild.sh",
-            "args": [],
+            "command": "python",
+            "args": [
+                "./build.py"
+            ],
             "group": {
-                "kind":"build", 
-                "isDefault": true 
+                "kind": "build",
+                "isDefault": true
             },
-            "detail": "Build the library and the test project and run server via excuting build.sh bash"
+            "detail": "Build the library and the test project and run server via executing build.sh bash"
         }
     ]
 }

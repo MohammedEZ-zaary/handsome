@@ -47,33 +47,37 @@ public:
 
 class httpServer {
 private:
+  // global = work both on win and linux
   int port;              // Port number
   int clientSocketClone; // Client socket
   int serverSocketClone; // Server socket
   int routeCount = 0;
   Route Error404Page = Route("/404", [this](requestHeader req) {});
-  std::vector<Route> routes; // Use a vector to store routes
 
-  // linux Methods
-  std::map<std::string, std::string>
-  parseHttpHeaderRequest(const std::string &request);
-  std::map<std::string, std::string>
-  parseHTTPRequest(const std::string &httpRequest);
-  std::string trim(const std::string &str);
+  std::vector<Route> routes; // Use a vector to store routes
   std::string extractRoute(const std::string &requestLine);
   Route getRoute(requestHeader &req, const std::string &routeName);
+
+// linux Methods
+#ifdef __linux__
   bool createSocket();         // Create the server socket
   bool bindSocket();           // Bind the server socket to an address and port
   bool listenForConnections(); // Listen for incoming client connections
   void acceptConnections();    // Accept and process client connections
   void processClientRequest(int clientSocket,
                             requestHeader &req); // Process each client request
-  void handleRequestBody(requestHeader &req, const std::string &value);
-  void handleQueryParams(requestHeader &req, const std::string &value);
-  void handleQueryBody(requestHeader &req, const std::string &value);
-  std::string urlDecoded(const std::string &encoded);
+#endif
 
   // windows Method
+#ifdef _WIN32
+  bool createSocketWin(); // Create the server socket
+  bool bindSocketWin();   // Bind the server socket to an address and port
+  bool listenForConnectionsWin(); // Listen for incoming client connections
+  void acceptConnectionsWin();    // Accept and process client connections
+  void
+  processClientRequestWin(int clientSocket,
+                          requestHeader &req); // Process each client request
+#endif
 
 public:
   httpServer()
@@ -83,6 +87,7 @@ public:
   void run();                       // Starts the server
   int getClientSocketClone() const; // Returns the client socket clone
   int getServerSocketClone() const; // Returns the server socket clone
+
   std::string
   readFileContent(const std::string &filePath); // Reads file content
   void sendResponse(int clientSocket, const std::string &content,
@@ -94,8 +99,6 @@ public:
       const std::string &staticRootFolder,
       const std::function<void(const std::string &, const std::string &)>
           &callback);
-  void handleRequestHeader(requestHeader &req, const std::string &,
-                           const std::string &);
 };
 
 // Response Header Class

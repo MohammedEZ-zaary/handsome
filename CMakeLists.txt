@@ -22,4 +22,3 @@ add_library(handsomelib STATIC
 target_include_directories(handsomelib PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
-
