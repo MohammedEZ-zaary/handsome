@@ -1,12 +1,22 @@
+// global
 #include <iostream>
-#include <unistd.h> // For close()
 #include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <sstream>
 #include "../../include/httpServer/httpServer.hpp"
 #include "../../include/httpServer/allContentTypeHeader.hpp"
+// win32
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#endif
 
+// linux
+#ifdef __linux__
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h> // For close()
+#endif
 
 
 // Header Class
