@@ -99,3 +99,4 @@ std::string HandsomeServer::readFileContent(const std::string &filePath) {
   //  read files like javascript , html , css ...
   return httpserver.readFileContent(filePath);
 }
+
