@@ -1,3 +1,4 @@
+// global
 #ifndef HTTP_SERVER_HPP
 #define HTTP_SERVER_HPP
 
@@ -5,6 +6,12 @@
 #include <iostream>
 #include <map>
 #include <vector>
+
+// windows
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 // Base class for headers
 class Header {
 protected:
@@ -22,8 +29,7 @@ public:
   std::string method;  // GET POST DELETE PUT
   std::string uri;     // path
   std::string version; // HTTP/1.1
-  std::map<std::string, std::string>
-      queryParams;                              // req.queryParams["id"] = "123"
+  std::map<std::string, std::string> queryParams; // req.queryParams["id"] = "123"
   std::map<std::string, std::string> queryBody; // req.queryParams["id"] = "123"
   std::string body;      // req.body = "{\"name\": \"John\"}";
   std::string ipAddress; // 192.168.11
@@ -58,25 +64,25 @@ private:
   std::string extractRoute(const std::string &requestLine);
   Route getRoute(requestHeader &req, const std::string &routeName);
 
+  //windows 
+  struct sockaddr_in clientAddrClone;
+  int clientAddrSizeClone ;
+
 // linux Methods
 #ifdef __linux__
   bool createSocket();         // Create the server socket
   bool bindSocket();           // Bind the server socket to an address and port
   bool listenForConnections(); // Listen for incoming client connections
   void acceptConnections();    // Accept and process client connections
-  void processClientRequest(int clientSocket,
-                            requestHeader &req); // Process each client request
+  void processClientRequest(int clientSocket, requestHeader &req); // Process each client request
 #endif
-
   // windows Method
 #ifdef _WIN32
   bool createSocketWin(); // Create the server socket
-  bool bindSocketWin();   // Bind the server socket to an address and port
+  bool bindSocket();   // Bind the server socket to an address and port
   bool listenForConnectionsWin(); // Listen for incoming client connections
   void acceptConnectionsWin();    // Accept and process client connections
-  void
-  processClientRequestWin(int clientSocket,
-                          requestHeader &req); // Process each client request
+  void processClientRequest(int clientSocket, requestHeader &req); // Process each client request
 #endif
 
 public:
@@ -90,15 +96,10 @@ public:
 
   std::string
   readFileContent(const std::string &filePath); // Reads file content
-  void sendResponse(int clientSocket, const std::string &content,
-                    const std::string &status = "200 OK",
-                    const std::string &contentType = "text/html");
+  void sendResponse(int clientSocket, const std::string &content,const std::string &status = "200 OK", const std::string &contentType = "text/html");
   void portListen(int port); // Sets the port to listen on
   void setRoute(const Route &route);
-  void serveStaticFile(
-      const std::string &staticRootFolder,
-      const std::function<void(const std::string &, const std::string &)>
-          &callback);
+  void serveStaticFile(const std::string &staticRootFolder, const std::function<void(const std::string &, const std::string &)> &callback);
 };
 
 // Response Header Class

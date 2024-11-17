@@ -19,6 +19,7 @@ def configure():
     print("Configuring project with CMake...")
     command = ""
     if(platform.system() == "Windows"): 
+        print("Windows Compile")
         command = (
             'cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON '
             '-DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" '
