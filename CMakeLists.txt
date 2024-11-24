@@ -40,6 +40,7 @@ add_library(handsomelib STATIC
     src/httpServerCpp/allContentTypeHeader.cpp
     src/httpServerCpp/httpServer.cpp
     src/httpServerCpp/headers.cpp
+    src/httpServerCpp/fileManager/fileHandlerUtils.cpp
     src/handSomeCpp/handSome.cpp
 )
 

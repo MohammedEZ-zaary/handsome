@@ -1,5 +1,6 @@
 #include "../../include/handSome/handSome.hpp"
 #include "../../include/httpServer/allContentTypeHeader.hpp"
+#include "../../include/httpServer/fileManager/fileHandlerUtils.hpp"
 #include "../../include/httpServer/httpServer.hpp"
 #include <filesystem>
 #include <functional>
@@ -97,6 +98,5 @@ std::string HandsomeServer::getStaticRootFolderPath() {
 }
 std::string HandsomeServer::readFileContent(const std::string &filePath) {
   //  read files like javascript , html , css ...
-  return httpserver.readFileContent(filePath);
+  return FileManager::readFileContent(filePath);
 }
-

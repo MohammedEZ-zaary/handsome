@@ -3,7 +3,8 @@
 #define HTTP_SERVER_HPP
 
 #include <functional>
-#include <iostream>
+#include <string>
+
 #include <map>
 #include <vector>
 
@@ -97,8 +98,6 @@ public:
   int getClientSocketClone() const; // Returns the client socket clone
   int getServerSocketClone() const; // Returns the server socket clone
 
-  std::string
-  readFileContent(const std::string &filePath); // Reads file content
   void sendResponse(int clientSocket, const std::string &content,
                     const std::string &status = "200 OK",
                     const std::string &contentType = "text/html");
