@@ -1,7 +1,8 @@
 // global
 #include "../../include/httpServer/httpServer.hpp"
-#include "../../include/httpServer/fileManager/fileHandlerUtils.hpp"
+#include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/utils.hpp"
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -46,7 +47,6 @@ void httpServer::run() {
     std::cout << "\033[1;32m[+] Server is listening on port " << port
               << " Using Single Thread" << "\033[0m\n";
   }
-
   acceptConnectionsWin(); // Accept client connections
 
 #endif
@@ -99,7 +99,7 @@ bool httpServer::bindSocket() {
 }
 
 void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
-  char buffer[4096] = {0};
+  char buffer[500] = {0};
   int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
 
   if (bytesReceived < 0) {
@@ -108,62 +108,88 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
     return;
   }
 
-  // Safe
+  //  first buffer Received
   auto headers = httpParsingString::parseHttpHeaderRequest(buffer);
 
-  int contentLength;
   for (const auto &pair : headers) {
-    // Not Safe
+    // set Content length as int
     if (pair.first == "Content-Length") {
       std::cout << "content--length : " << std::stoi(pair.second) << std::endl;
-      contentLength = std::stoi(pair.second);
+      req.contentLength = std::stoi(pair.second);
     }
+
     requestHandlerUtil::handleRequestHeader(req, pair.first, pair.second);
     req.setHeader(pair.first, pair.second);
   }
-  if (contentLength <= 0) {
-    std::cerr << "Invalid Content-Length or missing header." << std::endl;
-    return;
-  }
+  // if (contentLength <= 0) {
+  //   std::cerr << "Invalid Content-Length or missing header." << std::endl;
+  //   return;
+  // }
   // give value  to Request  Body if the method is POST request
   std::vector<char> body;
-  size_t bytes_to_read = contentLength;
-  size_t bytesRead = 0;
+  int counter = 0;
+  bool isBufferFinsh = true;
   for (const auto &pair : headers) {
 
-    // std::cout << pair.first << ":" << pair.second << std::endl;
-    if (pair.first == "Body") {
-      // 151
-      // 161
-      while (bytesRead < (bytes_to_read - 151)) {
-        bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (Multipart_FormData::isContentTypeFormData(pair.second)) {
+      std::cout << "Multi Part Active" << std::endl;
+      /* init calculatedSize =  req.contentLength at fist because with not yet
+        received the second chunck of buffer that has information about file
+       calculatedSize = Multipart_FormData::calculateFileLength(req, body);
+      */
 
-        // body.insert(body.end(), buffer, buffer + bytesReceived);
-        for (char c : buffer) {
-          // std::cout << c;
-          body.push_back(c);
-        }
-        bytesRead += bytesReceived;
+      // start retreive data
+      // get first chunk of buffer
+      try {
+        // for (char ch : buffer) {
+        //   body.push_back(ch);
+        // }
+        // bool b = true;
+        // start get the rest of the buffer
+        while (bytesReceived >= sizeof(buffer) || counter < bytesReceived) {
 
-        // send(clientSocket, response.c_str(), response.length(), 0);
-        if (bytesReceived <= 0) {
-          // std::mutx insted of std::cerr
-          std::cerr << "Error receiving data from client" << endl;
-          return;
+          bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+          // std::cout << "Update file size : " << calculatedSize << std::endl;
+          for (char c : buffer) {
+            body.push_back(c);
+          }
+
+          if (bytesReceived <= 0) {
+            std::cerr << "Error receiving data from client" << endl;
+            // clean and return varibles to default
+            isBufferFinsh = false;
+            counter = 0;
+            body.clear();
+            std::memset(buffer, 0, sizeof(buffer));
+            return;
+          }
+
+          counter += bytesReceived;
+          std::cout << "Read : " << bytesReceived << std::endl;
         }
-        // std::cout << headers[pair.first] << std::endl;
+
+        std::cout << "Bytes received: " << bytesReceived
+                  << ", Total bytes read: " << counter << std::endl;
+        if (isBufferFinsh) {
+          Multipart_FormData::parsingMultipartBody(req, body);
+        } else {
+          std::cout << "File Not Uploaded" << std::endl;
+        }
+        // clean and return varibles to default
+        counter = 0;
+        body.clear();
+        std::memset(buffer, 0, sizeof(buffer));
+
+        requestHandlerUtil::handleRequestBody(req, pair.second);
+      } catch (const std::runtime_error &e) {
+        counter = 0;
+        body.clear();
+        std::memset(buffer, 0, sizeof(buffer));
+        std::cout << "Error : " << &e << std::endl;
       }
-      std::cout << "Bytes received: " << bytesReceived
-                << ", Total bytes read: " << bytesRead << std::endl;
-      std::string bodyString(body.begin(), body.end());
-      req.setHeader("Body", bodyString);
-      FileManager::saveImageToFile(body, "img.jpg");
-
-      // clean all the buffer
-      body.clear();
-      requestHandlerUtil::handleRequestBody(req, pair.second);
     }
   }
+
   // Check client request
   for (const auto &pair : headers) {
     if (pair.first == "Request-Line") {
@@ -330,14 +356,17 @@ void httpServer::acceptConnectionsWin() {
             requestHeader req;
             processClientRequest(clientSocket, req);
             // LineReturn
-            // closesocket(clientSocket); // Close client connection when done
+            std::cout << "Finsh multi Tread and close connection " << std::endl;
+            closesocket(clientSocket); // Close client connection when done
           },
           clientSocket);
-      client_request_thread.join();
+      client_request_thread.detach();
     } else {
       // Single Thread
+      int a = 0;
       requestHeader req;
       processClientRequest(clientSocket, req);
+      std::cout << "Finsh Single Tread and close connection : " << std::endl;
       closesocket(clientSocket);
     }
   }

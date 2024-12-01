@@ -18,7 +18,6 @@
 #include <sys/socket.h>
 #include <unistd.h> // For close()
 #endif
-
 // Header Class
 void Header::setHeader(const std::string &key, const std::string &value) {
   headers[key] = value;
@@ -50,6 +49,7 @@ void requestHeader::cleanUpfunction() {
   this->queryParams.clear();
   this->queryBody.clear();
   this->body = "";
+  this->contentLength = 0;
   this->ipAddress = "";
   requestHeader::setDefaultValuesOfHeader();
 };

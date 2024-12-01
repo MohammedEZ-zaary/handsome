@@ -50,20 +50,28 @@ def build():
 
 
 def buildTheTest():
+    print("delet cache")
+
+    clean_command = "cmake --build ./test/build --target clean"
+    if run_command(clean_command) != 0:
+        print("Build clean .")
+
     print("Build the test")
     command1 = 'cmake -S ./test -B ./test/build -G "MinGW Makefiles"'
     command2 = "cmake  --build ./test/build"
     if run_command(command1) != 0:
-        print("Build failed.")
+        print("Build faild 1")
     if run_command(command2) != 0:
-        print("Build failed.")
+        print("Build failed 2.")
 
 
 def runTheServer():
     print("Run the http server")
-    command = ".\\test\\build\\main.exe"
-    if run_command(command) != 0:
-        print("faild run the server")
+
+    subprocess.run(["alacritty", "-e", ".\\test\\build\\main.exe"], shell=True)
+    # command = ".\\test\\build\\main.exe"
+    # if run_command(command) != 0:
+    # print("faild run the server")
 
 
 if __name__ == "__main__":
@@ -74,4 +82,4 @@ if __name__ == "__main__":
     build()
     print("Build complete.")
     buildTheTest()
-    # runTheServer()
+    runTheServer()

@@ -2,10 +2,13 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <vector>
+
 namespace FileManager {
-void saveImageToFile(const std::vector<char> &body,
-                     const std::string &fileName) {
+
+void saveFileBuffer(const std::string &imageBuffer,
+                    const std::string &fileName) {
   // Open the file in binary mode
   std::ofstream outFile(fileName, std::ios::binary);
   if (!outFile) {
@@ -15,17 +18,10 @@ void saveImageToFile(const std::vector<char> &body,
   }
 
   // Write the buffer to the file
-  outFile.write(body.data(), body.size());
-  if (!outFile.good()) {
-    std::cerr << "Error: Failed to write data to file " << fileName << "."
-              << std::endl;
-  }
-
+  outFile.write(imageBuffer.data(), imageBuffer.size());
   // Close the file
   outFile.close();
-  if (outFile.good()) {
-    std::cout << "Image saved successfully to " << fileName << "." << std::endl;
-  }
+  std::cout << "Image saved successfully to " << fileName << "." << std::endl;
 }
 std::string readFileContent(const std::string &filePath) {
   std::ifstream file(filePath);

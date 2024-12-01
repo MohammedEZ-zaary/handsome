@@ -4,8 +4,8 @@
 #include <vector>
 
 namespace FileManager {
-void saveImageToFile(const std::vector<char> &body,
-                     const std::string &fileName);
+void saveFileBuffer(const std::string &imageBuffer,
+                    const std::string &fileName);
 
 std::string readFileContent(const std::string &filePath);
 
