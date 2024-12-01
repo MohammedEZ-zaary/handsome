@@ -3,3 +3,4 @@
 /templates
 /build
 /test
+.cache
