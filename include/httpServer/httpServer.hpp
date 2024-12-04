@@ -48,6 +48,10 @@ class Route {
 public:
   std::string routeName;
   std::function<void(const requestHeader &)> executor;
+  std::vector<int>
+      multipartFormDataClientSocket; // this vector we store within it the
+                                     // clientsocket of the client who want to
+                                     // upload files
 
   Route(const std::string &routeName,
         const std::function<void(const requestHeader &)> &executor)
@@ -65,7 +69,6 @@ private:
 
   std::vector<Route> routes; // Use a vector to store routes
   std::string extractRoute(const std::string &requestLine);
-  Route getRoute(requestHeader &req, const std::string &routeName);
 
 // linux Methods
 #ifdef __linux__
@@ -108,6 +111,8 @@ public:
       const std::string &staticRootFolder,
       const std::function<void(const std::string &, const std::string &)>
           &callback);
+
+  Route &getRoute(requestHeader &req, const std::string &routeName);
 };
 
 // Response Header Class

@@ -1,12 +1,14 @@
 #include "../../include/handSome/handSome.hpp"
 #include "../../include/httpServer/allContentTypeHeader.hpp"
 #include "../../include/httpServer/fileManager/fileHandlerUtils.hpp"
+#include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/httpServer.hpp"
 #include <filesystem>
 #include <functional>
 #include <iostream>
 #include <string>
 #include <typeinfo> // Required for typeid
+#include <vector>
 
 using std::string;
 namespace fs = std::filesystem;
@@ -100,3 +102,19 @@ std::string HandsomeServer::readFileContent(const std::string &filePath) {
   //  read files like javascript , html , css ...
   return FileManager::readFileContent(filePath);
 }
+
+void HandsomeServer::saveMultiPartFile(requestHeader request, std::string path,
+                                       bool multiThread) {
+  std::cout << "Run save multi ..." << std::endl;
+  std::vector<int> multiPartSockets =
+      httpserver.getRoute(request, request.uri).multipartFormDataClientSocket;
+
+  for (int clientSocket : multiPartSockets) {
+    std::cout << "clientSocket : " << clientSocket << std::endl;
+    std::string buffer =
+        Multipart_FormData::handleMultipartRequest(clientSocket, request);
+    FileManager::saveFileBuffer(buffer, "hello.jpg");
+  }
+  // clean
+  multiPartSockets.clear();
+};

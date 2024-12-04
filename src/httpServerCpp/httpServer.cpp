@@ -2,6 +2,7 @@
 #include "../../include/httpServer/httpServer.hpp"
 #include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/utils.hpp"
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -99,9 +100,14 @@ bool httpServer::bindSocket() {
 }
 
 void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
-  char buffer[500] = {0};
+  char buffer[2048] = {0};
   int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
 
+  std::cout << "this is first buffer" << std::endl;
+  for (char c : buffer) {
+    std::cout << c;
+  }
+  std::cout << "end this first buffer" << std::endl;
   if (bytesReceived < 0) {
     // std::mutx insted of std::cerr
     std::cerr << "Error receiving data from client" << endl;
@@ -121,72 +127,20 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
     requestHandlerUtil::handleRequestHeader(req, pair.first, pair.second);
     req.setHeader(pair.first, pair.second);
   }
-  // if (contentLength <= 0) {
-  //   std::cerr << "Invalid Content-Length or missing header." << std::endl;
-  //   return;
-  // }
   // give value  to Request  Body if the method is POST request
-  std::vector<char> body;
-  int counter = 0;
-  bool isBufferFinsh = true;
+  // Handel Content-Type : x-www-form-urlencoded
   for (const auto &pair : headers) {
+    if (pair.first == "Body") {
+      requestHandlerUtil::handleRequestBody(req, pair.second);
+    }
+  }
 
+  for (const auto &pair : headers) {
+    // Handel Content-Type : Multipart/Form-data
     if (Multipart_FormData::isContentTypeFormData(pair.second)) {
-      std::cout << "Multi Part Active" << std::endl;
-      /* init calculatedSize =  req.contentLength at fist because with not yet
-        received the second chunck of buffer that has information about file
-       calculatedSize = Multipart_FormData::calculateFileLength(req, body);
-      */
-
-      // start retreive data
-      // get first chunk of buffer
-      try {
-        // for (char ch : buffer) {
-        //   body.push_back(ch);
-        // }
-        // bool b = true;
-        // start get the rest of the buffer
-        while (bytesReceived >= sizeof(buffer) || counter < bytesReceived) {
-
-          bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-          // std::cout << "Update file size : " << calculatedSize << std::endl;
-          for (char c : buffer) {
-            body.push_back(c);
-          }
-
-          if (bytesReceived <= 0) {
-            std::cerr << "Error receiving data from client" << endl;
-            // clean and return varibles to default
-            isBufferFinsh = false;
-            counter = 0;
-            body.clear();
-            std::memset(buffer, 0, sizeof(buffer));
-            return;
-          }
-
-          counter += bytesReceived;
-          std::cout << "Read : " << bytesReceived << std::endl;
-        }
-
-        std::cout << "Bytes received: " << bytesReceived
-                  << ", Total bytes read: " << counter << std::endl;
-        if (isBufferFinsh) {
-          Multipart_FormData::parsingMultipartBody(req, body);
-        } else {
-          std::cout << "File Not Uploaded" << std::endl;
-        }
-        // clean and return varibles to default
-        counter = 0;
-        body.clear();
-        std::memset(buffer, 0, sizeof(buffer));
-
-        requestHandlerUtil::handleRequestBody(req, pair.second);
-      } catch (const std::runtime_error &e) {
-        counter = 0;
-        body.clear();
-        std::memset(buffer, 0, sizeof(buffer));
-        std::cout << "Error : " << &e << std::endl;
-      }
+      std::cout << "Run multipart data" << std::endl;
+      Route &route = getRoute(req, req.uri);
+      route.multipartFormDataClientSocket.push_back(clientSocket);
     }
   }
 
@@ -200,6 +154,8 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
       routeClone.executor(req);
       // clean Header
       req.cleanUpfunction();
+
+      // closesocket(clientSocket);
     }
   }
 }
@@ -216,14 +172,30 @@ void httpServer::setRoute(const Route &route) {
     routeCount++;
     return;
   }
-
+  // first route
+  if (routes.empty()) {
+    routes.push_back(route);
+    routeCount++;
+    return;
+  }
+  // bug #001
+  // Check if the route already exists
+  // auto it = std::find(routes.begin(), routes.end(), [&route](const Route &r)
+  // {
+  //   return r.routeName == route.routeName;
+  // });
+  // if (it != routes.end()) {
+  //   std::cout << "[!]Warning: The route \"" << route.routeName
+  //             << "\" already exists and will not be added again.\n";
+  //   return;
+  // }
   routes.push_back(route);
   routeCount++;
 }
-Route httpServer::getRoute(requestHeader &req, const std::string &routeName) {
+Route &httpServer::getRoute(requestHeader &req, const std::string &routeName) {
   // Function to get a route by name
   // search for Name of The client Route
-  for (const Route &route : routes) {
+  for (Route &route : routes) {
     if (route.routeName == req.uri && req.uri != "/404") {
       return route;
     }
