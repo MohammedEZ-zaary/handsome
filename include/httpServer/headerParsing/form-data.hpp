@@ -1,23 +1,41 @@
 #ifndef FORM_DATA_HEADER
 #define FORM_DATA_HEADER
 #include "httpServer/httpServer.hpp"
+#include <functional>
 #include <string>
-#include <vector>
 
 using std::string;
 
 namespace Multipart_FormData {
 
-struct FileInfo;
-string handleMultipartRequest(int clientSocket, const requestHeader &);
-void parsingMultipartBody(const requestHeader &request,
-                          const std::vector<char> &body);
+;
+struct FileInfo {
+  string fileName;
+  string fullBoundary;
+  string boundaryId;
+  string boundaryEnd;
+  string filePath;
+  bool status = false;
+};
+string trim(const string &str);
+
+string extractFullBoundary(string contentType);
+
+FileInfo handleMultipartRequest(int clientSocket, const requestHeader &,
+                                std::function<void(double)> progress);
 
 bool isContentTypeFormData(const string &contentType);
 
-int calculateFileLength(const string &buffer);
 string extractBoundaryNumber(string boundary);
 
 string extractFileName(const string &buffer);
+
+void removeHttpHeaderFromFile(std::vector<char> proccessedBufferStore,
+                              char buffer);
+
+void setFileBoundary(FileInfo &store, const requestHeader &request);
+
+void removeHttpHeaderFromFile(std::vector<char> &bufferForProccess,
+                              FileInfo &fileInfo);
 } // namespace Multipart_FormData
 #endif

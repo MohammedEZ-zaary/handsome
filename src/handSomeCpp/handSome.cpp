@@ -6,9 +6,10 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <minwinbase.h>
 #include <string>
-#include <typeinfo> // Required for typeid
 #include <vector>
+#include <winsock2.h>
 
 using std::string;
 namespace fs = std::filesystem;
@@ -104,16 +105,15 @@ std::string HandsomeServer::readFileContent(const std::string &filePath) {
 }
 
 void HandsomeServer::saveMultiPartFile(requestHeader request, std::string path,
-                                       bool multiThread) {
-  std::cout << "Run save multi ..." << std::endl;
+                                       bool multiThread,
+                                       std::function<void(double)> per) {
   std::vector<int> multiPartSockets =
       httpserver.getRoute(request, request.uri).multipartFormDataClientSocket;
 
   for (int clientSocket : multiPartSockets) {
-    std::cout << "clientSocket : " << clientSocket << std::endl;
-    std::string buffer =
-        Multipart_FormData::handleMultipartRequest(clientSocket, request);
-    FileManager::saveFileBuffer(buffer, "hello.jpg");
+    Multipart_FormData::FileInfo res =
+        Multipart_FormData::handleMultipartRequest(clientSocket, request, per);
+    std::cout << res.fileName << std::endl;
   }
   // clean
   multiPartSockets.clear();

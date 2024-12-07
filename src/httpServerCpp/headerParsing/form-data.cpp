@@ -1,8 +1,8 @@
 #include "../../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../../include/httpServer/fileManager/fileHandlerUtils.hpp"
-
 #include "httpServer/httpServer.hpp"
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,65 +16,65 @@
 #include <sys/socket.h>
 #endif
 
-using std::string;
+using namespace std;
 
 namespace Multipart_FormData {
-struct FileInfo {
-  string fileName;
-  int fileSize;
-  string body;
-  string fullBoundary;
-  string boundaryId;
-};
 
-void parsingMultipartBody(const requestHeader &request,
-                          const std::vector<char> &body) {
-  FileInfo file;
-  string bodyData = request.getHeader("Body");
-  // get the Boundary form Content-Type header key
-  string contentType = request.getHeader("Content-Type");
-  string boundaryKey = "boundary=";
-  file.fullBoundary =
-      contentType.substr(contentType.find(boundaryKey) + boundaryKey.length());
+string trim(const string &str) {
+  // Find the position of the first non-whitespace character
+  size_t start = str.find_first_not_of(" \t\n\r");
 
-  file.boundaryId = extractBoundaryNumber(file.fullBoundary);
-
-  string bufferAsString(body.begin(), body.end());
-  // std::cout << "boooday Data : " << bufferAsString << std::endl;
-  // file.fileSize =
-  //     bufferAsString.substr(0, bufferAsString.find(file.boundary + "--"))
-  //         .length();
-  // std::cout << "body :" << bufferAsString.rfind(file.boundaryId + "--")
-  //           << std::endl;
-  // std::cout << "Boundary id :" << file.boundaryId << std::endl;
-  // std::cout << "Boundary full :" << file.fullBoundary << std::endl;
-
-  // std::cout << "Here :"
-  //           << bufferAsString.substr((bufferAsString.find("\r\n\r\n") + 2))
-  //           << std::endl;
-  if (!bodyData.empty()) {
-    FileManager::saveFileBuffer(bufferAsString, extractFileName(bodyData));
-  } else {
-    FileManager::saveFileBuffer(
-        bufferAsString.substr((bufferAsString.find("\r\n\r\n") + 4)),
-        extractFileName(bufferAsString));
+  // If the string is all whitespace, return an empty string
+  if (start == string::npos) {
+    return "";
   }
+
+  // Find the position of the last non-whitespace character
+  size_t end = str.find_last_not_of(" \t\n\r");
+
+  // Return the trimmed string
+  return str.substr(start, end - start + 1);
+}
+string extractBoundaryNumber(string boundary) {
+  // If the boundary starts with '--', remove the leading '--'
+
+  if (boundary.find("--", 0) == 0) {
+    boundary = boundary.substr(4); // Remove the leading '--'
+  }
+  return boundary;
 }
 
-string handleMultipartRequest(int clientSocket, const requestHeader &req) {
-  std::vector<char> body;
-  int bytesToRead = 0;
-  bool isBufferFinsh = true;
-  int bytesReceived = 0;
-  char buffer[8192] = {0};
-  // std::cout << req.getHeader("Body") << std::endl;
-  // req.printHeaders();
-  try {
-    // start get the rest of the buffer
-    // bytesReceived >= sizeof(buffer) || counter < bytesReceived
-    //
-    while (bytesToRead != std::stoi(req.getHeader("Content-Length"))) {
+string extractFullBoundary(string contentType) {
+  string boundaryKey = "boundary=";
+  size_t start = contentType.find(boundaryKey) + boundaryKey.length();
+  return trim(contentType.substr(start));
+}
 
+FileInfo handleMultipartRequest(int clientSocket, const requestHeader &req,
+                                std::function<void(double)> progress) {
+  vector<char> body;
+  int bytesToRead = 0;
+  int bytesReceived = 0;
+  int tempSaveBufferOnFileCounter = 0;
+  char buffer[4096] = {0};
+  long long contentLengthOfTheFile = static_cast<int>(req.contentLength);
+  double percentage = 0;
+  vector<char> proccessedBody;
+  FileInfo fileInformation;
+  string requestBody = req.getHeader("Body");
+
+  if (!requestBody.empty()) {
+    contentLengthOfTheFile = (req.contentLength - requestBody.length());
+  }
+  try {
+
+    // start get the rest of the buffer
+    if (!requestBody.empty()) {
+      for (char c : requestBody) {
+        body.push_back(c);
+      }
+    }
+    while (bytesToRead != contentLengthOfTheFile) {
       bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
 
       for (char c : buffer) {
@@ -82,73 +82,89 @@ string handleMultipartRequest(int clientSocket, const requestHeader &req) {
       }
 
       if (bytesReceived <= 0) {
-        std::cerr << "Error receiving data from client" << std::endl;
-        std::string b(body.begin(), body.end());
-        std::cout << b << std::endl;
-        // clean and return varibles to default
-        isBufferFinsh = false;
-        bytesToRead = 0;
-        // body.clear();
-        std::memset(buffer, 0, sizeof(buffer));
-        return "";
+        cerr << "Error receiving data from client" << endl;
+        return fileInformation;
       }
 
-      bytesToRead += bytesReceived;
-      std::cout << "Read : " << bytesToRead << std::endl;
+      if (bytesReceived > 0) {
+        bytesToRead += bytesReceived;
+        // cout << "Read : " << bytesToRead << endl;
+
+        tempSaveBufferOnFileCounter += 1;
+        if (tempSaveBufferOnFileCounter == 1) {
+          // varibles
+          string bodyBuffer(body.begin(), body.end());
+          // set the file name
+          fileInformation.fileName = extractFileName(bodyBuffer);
+          // extract boundary
+          setFileBoundary(fileInformation, req);
+        }
+        // add comment
+        if (bytesToRead % (sizeof(buffer) * 3) == 0 ||
+            bytesToRead == contentLengthOfTheFile) {
+          percentage = (static_cast<double>(bytesToRead) * 100.0) /
+                       contentLengthOfTheFile;
+
+          // cout << percentage << "%" << endl;
+          // call callback progress function to send the progress of the upload
+          progress(percentage);
+          string bodyAsString(body.begin(), body.end());
+          FileManager::saveFileBuffer(bodyAsString, fileInformation.fileName);
+
+          body.clear();
+        }
+        if (bytesToRead == contentLengthOfTheFile) {
+          fileInformation.status = true;
+          bytesToRead = 0;
+          body.clear();
+          proccessedBody.clear();
+          memset(buffer, 0, sizeof(buffer));
+          return fileInformation;
+        }
+      }
     }
-
-    std::cout << "Bytes received: " << bytesReceived
-              << ", Total bytes read: " << bytesToRead << std::endl;
-
-    // clean and return varibles to default
+  } catch (const runtime_error &e) {
     bytesToRead = 0;
-    // body.clear();
-    std::memset(buffer, 0, sizeof(buffer));
-
-  } catch (const std::runtime_error &e) {
-    bytesToRead = 0;
-    // body.clear();
-    std::memset(buffer, 0, sizeof(buffer));
-    std::cout << "Error : " << &e << std::endl;
+    body.clear();
+    memset(buffer, 0, sizeof(buffer));
+    cout << "Error : " << &e << endl;
   }
-  std::string bodyAsString(body.begin(), body.end());
-  return bodyAsString;
+
+  return fileInformation;
 };
-int calculateFileLength(const string &buffer) {
-
-  int calculatedSize;
-  if (buffer.empty()) {
-    return 0;
-  }
-  return calculatedSize;
-}
 
 bool isContentTypeFormData(const string &contentType) {
   return contentType.find("multipart/form-data") == 0;
-}
-
-string extractBoundaryNumber(string boundary) {
-  /*
-   * This function take boundary of file form header and return only the id of
-   * the boundary example : input : ---------456545522154885212155 output:
-   * 456545522154885212155
-   * */
-  return boundary.substr(boundary.rfind("-") + 1);
 }
 
 string extractFileName(const string &buffer) {
   FileInfo newFile;
   size_t contentDispositionIndex = buffer.find("Content-Disposition");
   size_t lineEnd = buffer.find("\n", contentDispositionIndex);
-  // filename="hello.JPG"
   string contentDisposition =
       buffer.substr(contentDispositionIndex, lineEnd - contentDispositionIndex);
+
   string fileNameWithKeyAndValue =
       contentDisposition.substr(contentDisposition.find("filename=\""));
   string fileName =
       (fileNameWithKeyAndValue.substr(fileNameWithKeyAndValue.find("\"") + 1,
                                       fileNameWithKeyAndValue.length() - 12));
   return fileName;
-}
+};
+void removeHttpHeaderFromFile(vector<char> &bufferForProccess,
+                              FileInfo &fileInfo) {
+  string buffAsString(bufferForProccess.begin(), bufferForProccess.end());
+  string f = buffAsString.substr(buffAsString.find("\r\n\r\n") + 4);
+  bufferForProccess.clear();
+  for (char c : f) {
+    bufferForProccess.push_back(c);
+  }
+};
 
+void setFileBoundary(FileInfo &store, const requestHeader &request) {
+  // extract file information
+  store.fullBoundary = extractFullBoundary(request.getHeader("Content-Type"));
+  store.boundaryId = extractBoundaryNumber(store.fullBoundary);
+  store.boundaryEnd = "--" + store.fullBoundary + "--";
+}
 } // namespace Multipart_FormData

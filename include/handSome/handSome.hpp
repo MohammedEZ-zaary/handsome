@@ -29,7 +29,8 @@ public:
   std::string readFileContent(const std::string &folderPath);
 
   // under testing
-  void saveMultiPartFile(requestHeader, std::string path, bool multiThread);
+  void saveMultiPartFile(requestHeader, std::string path, bool multiThread,
+                         std::function<void(double)> per);
 };
 
 #endif

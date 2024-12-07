@@ -2,7 +2,6 @@
 #include "../../include/httpServer/httpServer.hpp"
 #include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/utils.hpp"
-#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -103,11 +102,6 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
   char buffer[2048] = {0};
   int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
 
-  std::cout << "this is first buffer" << std::endl;
-  for (char c : buffer) {
-    std::cout << c;
-  }
-  std::cout << "end this first buffer" << std::endl;
   if (bytesReceived < 0) {
     // std::mutx insted of std::cerr
     std::cerr << "Error receiving data from client" << endl;
@@ -120,27 +114,28 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
   for (const auto &pair : headers) {
     // set Content length as int
     if (pair.first == "Content-Length") {
-      std::cout << "content--length : " << std::stoi(pair.second) << std::endl;
       req.contentLength = std::stoi(pair.second);
     }
-
     requestHandlerUtil::handleRequestHeader(req, pair.first, pair.second);
     req.setHeader(pair.first, pair.second);
   }
-  // give value  to Request  Body if the method is POST request
-  // Handel Content-Type : x-www-form-urlencoded
+
+  // Handel Content-Types
   for (const auto &pair : headers) {
+    // Handel Content-Type : x-www-form-urlencoded
+    // give value  to Request  Body if the method is POST request
     if (pair.first == "Body") {
       requestHandlerUtil::handleRequestBody(req, pair.second);
     }
-  }
-
-  for (const auto &pair : headers) {
     // Handel Content-Type : Multipart/Form-data
     if (Multipart_FormData::isContentTypeFormData(pair.second)) {
-      std::cout << "Run multipart data" << std::endl;
-      Route &route = getRoute(req, req.uri);
-      route.multipartFormDataClientSocket.push_back(clientSocket);
+      if (req.contentLength == 0) {
+        std::cerr << "[!Warning] Please add file . The body is empty"
+                  << std::endl;
+      } else {
+        Route &route = getRoute(req, req.uri);
+        route.multipartFormDataClientSocket.push_back(clientSocket);
+      }
     }
   }
 
@@ -178,17 +173,6 @@ void httpServer::setRoute(const Route &route) {
     routeCount++;
     return;
   }
-  // bug #001
-  // Check if the route already exists
-  // auto it = std::find(routes.begin(), routes.end(), [&route](const Route &r)
-  // {
-  //   return r.routeName == route.routeName;
-  // });
-  // if (it != routes.end()) {
-  //   std::cout << "[!]Warning: The route \"" << route.routeName
-  //             << "\" already exists and will not be added again.\n";
-  //   return;
-  // }
   routes.push_back(route);
   routeCount++;
 }
