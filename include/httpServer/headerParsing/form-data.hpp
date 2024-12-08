@@ -15,6 +15,7 @@ struct FileInfo {
   string boundaryId;
   string boundaryEnd;
   string filePath;
+  bool isFileComplete = false;
   bool status = false;
 };
 string trim(const string &str);
@@ -30,12 +31,13 @@ string extractBoundaryNumber(string boundary);
 
 string extractFileName(const string &buffer);
 
-void removeHttpHeaderFromFile(std::vector<char> proccessedBufferStore,
-                              char buffer);
-
+// void removeHttpHeaderFromFile(std::vector<char> proccessedBufferStore,
+//                               char buffer);
 void setFileBoundary(FileInfo &store, const requestHeader &request);
 
 void removeHttpHeaderFromFile(std::vector<char> &bufferForProccess,
                               FileInfo &fileInfo);
+
+void searchForBoundaryAndRemove(string filePath);
 } // namespace Multipart_FormData
 #endif

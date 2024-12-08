@@ -134,7 +134,7 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
                   << std::endl;
       } else {
         Route &route = getRoute(req, req.uri);
-        route.multipartFormDataClientSocket.push_back(clientSocket);
+        route.multipartFormDataClientSocket = clientSocket;
       }
     }
   }
@@ -312,7 +312,8 @@ void httpServer::acceptConnectionsWin() {
             requestHeader req;
             processClientRequest(clientSocket, req);
             // LineReturn
-            std::cout << "Finsh multi Tread and close connection " << std::endl;
+            // std::cout << "Finsh multi Tread and close connection " <<
+            // std::endl;
             closesocket(clientSocket); // Close client connection when done
           },
           clientSocket);
@@ -322,7 +323,7 @@ void httpServer::acceptConnectionsWin() {
       int a = 0;
       requestHeader req;
       processClientRequest(clientSocket, req);
-      std::cout << "Finsh Single Tread and close connection : " << std::endl;
+      // std::cout << "Finsh Single Tread and close connection : " << std::endl;
       closesocket(clientSocket);
     }
   }

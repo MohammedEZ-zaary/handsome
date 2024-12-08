@@ -82,4 +82,4 @@ if __name__ == "__main__":
     build()
     print("Build complete.")
     buildTheTest()
-    runTheServer()
+    # runTheServer()

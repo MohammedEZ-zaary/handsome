@@ -3,4 +3,5 @@
 /templates
 /build
 /.cache
+/compile_commands.json
 /test

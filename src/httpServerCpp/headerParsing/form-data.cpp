@@ -1,9 +1,11 @@
 #include "../../../include/httpServer/headerParsing/form-data.hpp"
-#include "../../../include/httpServer/fileManager/fileHandlerUtils.hpp"
+#include "httpServer/fileManager/fileHandlerUtils.hpp"
 #include "httpServer/httpServer.hpp"
+#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 // windows
@@ -50,17 +52,41 @@ string extractFullBoundary(string contentType) {
   return trim(contentType.substr(start));
 }
 
+std::string generateRandomString(size_t length) {
+  const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                 "abcdefghijklmnopqrstuvwxyz"
+                                 "0123456789";
+
+  std::random_device rd;        // Seed generator
+  std::mt19937 generator(rd()); // Random number generator
+  std::uniform_int_distribution<> distribution(0, characters.size() - 1);
+
+  std::string randomString;
+  for (size_t i = 0; i < length; ++i) {
+    randomString += characters[distribution(generator)];
+  }
+
+  return randomString;
+}
+
 FileInfo handleMultipartRequest(int clientSocket, const requestHeader &req,
                                 std::function<void(double)> progress) {
+  cout << "hello one time" << endl;
   vector<char> body;
-  int bytesToRead = 0;
-  int bytesReceived = 0;
-  int tempSaveBufferOnFileCounter = 0;
-  char buffer[4096] = {0};
-  long long contentLengthOfTheFile = static_cast<int>(req.contentLength);
-  double percentage = 0;
-  vector<char> proccessedBody;
-  FileInfo fileInformation;
+  int bytesToRead =
+      0; // every bytes received  from socket coutered by this varible
+  int bytesReceived = 0; //
+  int tempSaveBufferOnFileCounter =
+      0; // check if we received the first chunk of file buffer. if yes then :
+         // tempSaveBufferOnFileCounter must be  > 1
+  char buffer[2096] = {0};
+  long long contentLengthOfTheFile =
+      static_cast<int>(req.contentLength); // content-Length
+  double percentage = 0; // the progress of the upload file example start from
+                         // 0%.....100% file complete received
+  FileInfo
+      fileInformation; // in this struct we store all data that belong the file;
+  bool isDataComplete = false;
   string requestBody = req.getHeader("Body");
 
   if (!requestBody.empty()) {
@@ -74,9 +100,12 @@ FileInfo handleMultipartRequest(int clientSocket, const requestHeader &req,
         body.push_back(c);
       }
     }
-    while (bytesToRead != contentLengthOfTheFile) {
-      bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+    // cout << "file Length : " << contentLengthOfTheFile << endl;
+    // bytesToRead != contentLengthOfTheFile
 
+    string r = generateRandomString(5);
+    while (bytesToRead != contentLengthOfTheFile || isDataComplete) {
+      bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
       for (char c : buffer) {
         body.push_back(c);
       }
@@ -98,27 +127,45 @@ FileInfo handleMultipartRequest(int clientSocket, const requestHeader &req,
           fileInformation.fileName = extractFileName(bodyBuffer);
           // extract boundary
           setFileBoundary(fileInformation, req);
+
+          removeHttpHeaderFromFile(body, fileInformation);
         }
+
         // add comment
-        if (bytesToRead % (sizeof(buffer) * 3) == 0 ||
+        //
+        if (bytesToRead % (sizeof(buffer) * 5) == 0 ||
             bytesToRead == contentLengthOfTheFile) {
+
           percentage = (static_cast<double>(bytesToRead) * 100.0) /
                        contentLengthOfTheFile;
-
-          // cout << percentage << "%" << endl;
           // call callback progress function to send the progress of the upload
           progress(percentage);
-          string bodyAsString(body.begin(), body.end());
-          FileManager::saveFileBuffer(bodyAsString, fileInformation.fileName);
 
+          string bodyAsString(body.begin(), body.end());
+          // start filer
+          size_t targetBoundary =
+              bodyAsString.find(fileInformation.boundaryEnd);
+          if (targetBoundary != std::string::npos) {
+            FileManager::saveFileBuffer(bodyAsString.substr(0, targetBoundary),
+                                        (r + fileInformation.fileName));
+            isDataComplete = true;
+          } else {
+            // cout << bodyAsString << endl;
+            FileManager::saveFileBuffer(bodyAsString,
+                                        (r + fileInformation.fileName));
+          }
+          // after proccessing the buffer on memeroy aka(char buffer) and save
+          // it in file we delet that part from buffer[***] for allowing to next
+          // new buffer to proccess
           body.clear();
         }
         if (bytesToRead == contentLengthOfTheFile) {
           fileInformation.status = true;
           bytesToRead = 0;
           body.clear();
-          proccessedBody.clear();
           memset(buffer, 0, sizeof(buffer));
+
+          cout << "......Upload Completed ....." << endl;
           return fileInformation;
         }
       }
@@ -129,7 +176,6 @@ FileInfo handleMultipartRequest(int clientSocket, const requestHeader &req,
     memset(buffer, 0, sizeof(buffer));
     cout << "Error : " << &e << endl;
   }
-
   return fileInformation;
 };
 
@@ -154,9 +200,9 @@ string extractFileName(const string &buffer) {
 void removeHttpHeaderFromFile(vector<char> &bufferForProccess,
                               FileInfo &fileInfo) {
   string buffAsString(bufferForProccess.begin(), bufferForProccess.end());
-  string f = buffAsString.substr(buffAsString.find("\r\n\r\n") + 4);
+  string fileBody = buffAsString.substr(buffAsString.find("\r\n\r\n") + 4);
   bufferForProccess.clear();
-  for (char c : f) {
+  for (char c : fileBody) {
     bufferForProccess.push_back(c);
   }
 };
