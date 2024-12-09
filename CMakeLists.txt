@@ -14,9 +14,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 add_library(handsomelib STATIC
     src/httpServerCpp/allContentTypeHeader.cpp
     src/httpServerCpp/httpServer.cpp
-    src/httpServerCpp/headers.cpp
     src/httpServerCpp/fileManager/fileHandlerUtils.cpp
     src/httpServerCpp/headerParsing/form-data.cpp
+    src/httpServerCpp/header.cpp
+    src/httpServerCpp/requestHeader.cpp
+    src/httpServerCpp/responseHeader.cpp
     src/handSomeCpp/handSome.cpp
 )
 

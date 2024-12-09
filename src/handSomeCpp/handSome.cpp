@@ -3,6 +3,10 @@
 #include "../../include/httpServer/fileManager/fileHandlerUtils.hpp"
 #include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/httpServer.hpp"
+#include "../../include/httpServer/requestHeader.hpp"
+#include "../../include/httpServer/responseHeader.hpp"
+#include "../../include/httpServer/route.hpp"
+
 #include <filesystem>
 #include <functional>
 #include <iostream>

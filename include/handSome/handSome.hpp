@@ -2,6 +2,7 @@
 #define HANDSOMESERVER_HPP
 
 #include "../httpServer/httpServer.hpp"
+#include "../httpServer/responseHeader.hpp"
 #include <functional>
 #include <string>
 

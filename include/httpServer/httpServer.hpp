@@ -1,9 +1,9 @@
 // global
 #ifndef HTTP_SERVER_HPP
 #define HTTP_SERVER_HPP
-
+#include "requestHeader.hpp"
+#include "route.hpp"
 #include <functional>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -11,50 +11,6 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-
-// Base class for headers
-class Header {
-protected:
-  std::map<std::string, std::string>
-      headers; // Store headers as key-value pairs
-
-public:
-  void setHeader(const std::string &key, const std::string &value);
-  std::string getHeader(const std::string &key) const;
-  void printHeaders() const;
-};
-// Request Header
-class requestHeader : public Header {
-public:
-  std::string method;  // GET POST DELETE PUT
-  std::string uri;     // path
-  std::string version; // HTTP/1.1
-  std::map<std::string, std::string>
-      queryParams;                              // req.queryParams["id"] = "123"
-  std::map<std::string, std::string> queryBody; // req.queryParams["id"] = "123"
-  std::string body;                 // req.body = "{\"name\": \"John\"}";
-  std::string ipAddress;            // 192.168.11
-  unsigned long long contentLength; // 300 bytes
-  // init
-  requestHeader();
-  void cleanUpfunction();
-
-private:
-  void setDefaultValuesOfHeader();
-};
-// Route Class
-class Route {
-public:
-  std::string routeName;
-  std::function<void(const requestHeader &)> executor;
-  int multipartFormDataClientSocket = 0; // we store within it the
-                                         // clientsocket of the client who want
-                                         // to upload files
-
-  Route(const std::string &routeName,
-        const std::function<void(const requestHeader &)> &executor)
-      : routeName(routeName), executor(executor) {}
-};
 
 class httpServer {
 private:
@@ -113,23 +69,4 @@ public:
   Route &getRoute(requestHeader &req, const std::string &routeName);
 };
 
-// Response Header Class
-class responseHeader : public Header {
-private:
-  httpServer *serverRef; // Pointer to the httpServer
-  // Private Method
-  void setBody(const std::string &body);
-  httpServer *getServerRef();
-
-public:
-  std::string statusCode = "200 OK"; // Default status code
-  std::string body;                  // Response body
-
-  // Constructor that accepts a reference to the server
-  responseHeader(httpServer *server);
-  void setStatusCode(std::string status);
-  void sendData(const std::string &data);
-  std::string getResponseString();
-  void sendFile(const std::string &filePath);
-};
 #endif
