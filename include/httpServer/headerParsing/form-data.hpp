@@ -20,6 +20,8 @@ struct FileInfo {
 };
 string trim(const string &str);
 
+std::string generateRandomString(size_t length);
+
 string extractFullBoundary(string contentType);
 
 FileInfo handleMultipartRequest(int clientSocket, const requestHeader &,

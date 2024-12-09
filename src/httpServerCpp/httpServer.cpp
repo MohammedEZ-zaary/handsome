@@ -114,7 +114,15 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
   for (const auto &pair : headers) {
     // set Content length as int
     if (pair.first == "Content-Length") {
-      req.contentLength = std::stoi(pair.second);
+      try {
+        req.contentLength = std::stoi(pair.second);
+      } catch (const std::invalid_argument &) {
+        std::cout << "Error: 'Content-Length' value is not a valid number."
+                  << std::endl;
+      } catch (const std::out_of_range &) {
+        std::cout << "Error: 'Content-Length' value is too large to handle."
+                  << std::endl;
+      }
     }
     requestHandlerUtil::handleRequestHeader(req, pair.first, pair.second);
     req.setHeader(pair.first, pair.second);
@@ -149,8 +157,6 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
       routeClone.executor(req);
       // clean Header
       req.cleanUpfunction();
-
-      // closesocket(clientSocket);
     }
   }
 }
@@ -236,7 +242,7 @@ void httpServer::acceptConnections() {
             close(clientSocket); // Close client connection when done
           },
           clientSocket);
-      client_request_thread.join();
+      client_request_thread.detach();
     } else {
       // Single Thread
       requestHeader req;
@@ -320,7 +326,6 @@ void httpServer::acceptConnectionsWin() {
       client_request_thread.detach();
     } else {
       // Single Thread
-      int a = 0;
       requestHeader req;
       processClientRequest(clientSocket, req);
       // std::cout << "Finsh Single Tread and close connection : " << std::endl;

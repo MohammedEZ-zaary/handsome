@@ -32,9 +32,9 @@ public:
   std::map<std::string, std::string>
       queryParams;                              // req.queryParams["id"] = "123"
   std::map<std::string, std::string> queryBody; // req.queryParams["id"] = "123"
-  std::string body;        // req.body = "{\"name\": \"John\"}";
-  std::string ipAddress;   // 192.168.11
-  long long contentLength; // 300 bytes
+  std::string body;                 // req.body = "{\"name\": \"John\"}";
+  std::string ipAddress;            // 192.168.11
+  unsigned long long contentLength; // 300 bytes
   // init
   requestHeader();
   void cleanUpfunction();

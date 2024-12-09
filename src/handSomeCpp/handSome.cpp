@@ -6,10 +6,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
-#include <minwinbase.h>
 #include <string>
-#include <vector>
-#include <winsock2.h>
 
 using std::string;
 namespace fs = std::filesystem;
