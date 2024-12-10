@@ -1,6 +1,7 @@
 #ifndef HANDSOMESERVER_HPP
 #define HANDSOMESERVER_HPP
 
+#include "../httpServer/headerParsing/form-data.hpp"
 #include "../httpServer/httpServer.hpp"
 #include "../httpServer/responseHeader.hpp"
 #include <functional>
@@ -16,9 +17,13 @@ private:
 public:
   HandsomeServer();                 // Constructor
   HandsomeServer &listen(int port); // Set port and enable method chaining
-  HandsomeServer &
-  startServer(bool multi_thread_status =
-                  true); // Start the server and enable method chaining
+  // Start the server and enable method chaining
+  HandsomeServer &startServer(bool multi_thread_status = true);
+
+  // content-type props we will use it as a type of varibles
+  struct MultipartFormData {
+    using clientFinelFile = ::Multipart_FormData::clientFinelFile;
+  };
   // Define a route with a lambda function executor
   void route(const std::string &routeName,
              const std::function<void(const requestHeader &, responseHeader &)>
@@ -30,8 +35,10 @@ public:
   std::string readFileContent(const std::string &folderPath);
 
   // under testing
-  void saveMultiPartFile(requestHeader, std::string path,
-                         std::function<void(double)> per);
+
+  std::vector<Multipart_FormData::clientFinelFile>
+  saveMultiPartFile(requestHeader, std::string path,
+                    std::function<void(double)> per);
 };
 
 #endif
