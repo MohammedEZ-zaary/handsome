@@ -37,7 +37,7 @@ public:
   // under testing
 
   std::vector<Multipart_FormData::clientFinelFile>
-  saveMultiPartFile(requestHeader, std::string path,
+  saveMultiPartFile(requestHeader, std::string path, int memoryAlloc,
                     std::function<void(double)> per);
 };
 

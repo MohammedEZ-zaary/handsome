@@ -115,11 +115,14 @@ void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
     // set Content length as int
     if (pair.first == "Content-Length") {
       try {
-        req.contentLength = std::stoi(pair.second);
+        req.contentLength = std::stoll(pair.second);
+
       } catch (const std::invalid_argument &) {
         std::cout << "Error: 'Content-Length' value is not a valid number."
                   << std::endl;
       } catch (const std::out_of_range &) {
+
+        std::cout << req.contentLength << std::endl;
         std::cout << "Error: 'Content-Length' value is too large to handle."
                   << std::endl;
       }

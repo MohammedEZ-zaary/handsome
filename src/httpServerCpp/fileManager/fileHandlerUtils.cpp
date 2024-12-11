@@ -44,7 +44,6 @@ bool removeFile(std::string filePath) {
     if (fs::exists(filePath)) {
       // Remove the file
       if (fs::remove(filePath)) {
-        std::cout << "File removed successfully: " << filePath << std::endl;
         return true;
       } else {
         std::cerr << "Failed to remove the file: " << filePath << std::endl;
