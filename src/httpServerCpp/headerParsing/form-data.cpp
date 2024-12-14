@@ -69,8 +69,10 @@ std::string generateRandomString(size_t length) {
 }
 
 std::vector<clientFinelFile>
+
 handleMultipartRequest(int clientSocket, const requestHeader &req,
-                       int memoryAlloc, std::function<void(double)> progress) {
+                       string uploadFolderPath, int memoryAlloc,
+                       std::function<void(fileProgress)> progress) {
   // handleMultipleFiles varibles
   vector<clientFinelFile> files;
   string textFaild;
@@ -81,9 +83,6 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
   // every bytes received  from socket coutered by this varible
   unsigned long long bytesToRead = 0;
   unsigned long long bytesReceived = 0;
-  // check if we received the first chunk of file buffer. if yes then :
-  // tempSaveBufferOnFileCounter must be  > 1
-  int tempSaveBufferOnFileCounter = 0;
 
   const size_t bufferSize = 8000; // 8KB buffer size
   char buffer[bufferSize] = {0};
@@ -95,6 +94,7 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
   double percentage = 0;
   // in this struct we store all data that belong the file;
   FileInfo fileInformation;
+  fileProgress filePr;
   // isDataComplete true only when we received full buffer of the file
   bool isDataComplete = false;
   string requestBody = req.getHeader("Body");
@@ -103,13 +103,16 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
   if (memoryAlloc < 1) {
     memoryAlloc = 1;
   }
-  if (memoryAlloc > bufferSize) {
-    memoryAlloc = bufferSize;
-  }
+
   if (req.method != "POST") {
     return files;
   }
-
+  // check upload folder path
+  if (!FileManager::isPathFolderExists(uploadFolderPath)) {
+    std::cerr << "Please check upload Folder path\r\nwe didn't found this path "
+              << uploadFolderPath << std::endl;
+    return files;
+  }
   if (!requestBody.empty()) {
     contentLengthOfTheFile = (req.contentLength - requestBody.length());
   }
@@ -133,7 +136,10 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
       bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
       if (bytesReceived <= 0) {
         if (bytesReceived == 0) {
-          FileManager::removeFile(fileInformation.fileName);
+          // remove all the files if client shutdown the connection
+          for (clientFinelFile &file : files) {
+            FileManager::removeFile(file.filePath);
+          }
           cerr << "Client disconnected" << endl;
           break;
         } else {
@@ -154,19 +160,33 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
 
         bytesToRead += bytesReceived;
 
-        if (bytesToRead % (sizeof(buffer) * memoryAlloc) == 0 ||
-            // cout << "MemeAlloc : " << (sizeof(buffer) * memoryAlloc)
-            // << endl;
+        const size_t processingThreshold = sizeof(buffer) * memoryAlloc;
+        if (body.size() >= processingThreshold ||
             bytesToRead == contentLengthOfTheFile) {
           percentage = (static_cast<double>(bytesToRead) * 100.0) /
                        contentLengthOfTheFile;
 
-          progress(percentage);
+          filePr.fileName = fileInformation.fileName;
+          filePr.status = false;
+          filePr.TotalFilesProgress = percentage;
+          progress(filePr);
 
-          handleMultipleFiles(req, fileInformation, files, body);
+          handleMultipleFiles(req, uploadFolderPath, fileInformation, files,
+                              body, bytesToRead);
           body.clear();
+          body.shrink_to_fit();
         }
       }
+    }
+    // re-calculate file size
+    // useing math chain : fileSize[n] = fileSize[n] - fileSize[n - 1] while n =
+    // files.size()
+    int f = files.size();
+    for (int c = f - 1; c > 0; c--) {
+      if (f == 1) {
+        return files;
+      }
+      files[c].fileSize = files[c].fileSize - files[c - 1].fileSize;
     }
     return files;
   } catch (const runtime_error &e) {
@@ -176,14 +196,16 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
   }
   return files;
 };
-void handleMultipleFiles(const requestHeader &request, FileInfo &fileInfo,
-                         vector<clientFinelFile> &files, vector<char> body) {
+void handleMultipleFiles(const requestHeader &request, string uploadFolderPath,
+                         FileInfo &fileInfo, vector<clientFinelFile> &files,
+                         vector<char> body,
+                         const unsigned long long &currentFileSize) {
 
   vector<int> boundaries;
   setFileBoundary(fileInfo, request);
   string bodyAsString(body.begin(), body.end());
-
   int fileContent = bodyAsString.find("--" + fileInfo.fullBoundary);
+
   while (fileContent != string::npos) {
     // check if the boundary is not the end boundary
     if (fileContent != bodyAsString.find(fileInfo.boundaryEnd)) {
@@ -220,9 +242,11 @@ void handleMultipleFiles(const requestHeader &request, FileInfo &fileInfo,
           clientFinelFile newFile;
           newFile.fileName = fileInfo.fileName;
           newFile.status = true;
-          newFile.filePath = "";
+          newFile.filePath = uploadFolderPath + "/" + fileInfo.fileName;
+          newFile.fileSize = currentFileSize;
           files.push_back(newFile);
           removeMetaDataFromBuffer(fileContent);
+
         } else {
           // if there no filename in meta data in the header then we are
           // handling text return;
@@ -234,18 +258,20 @@ void handleMultipleFiles(const requestHeader &request, FileInfo &fileInfo,
           // return;
         }
 
-      } catch (...) {
+      } catch (const runtime_error &e) {
         cout << "Errror file name not found" << endl;
       }
+
       // check if there any end boundary mess
       size_t eBoundary = fileContent.find(fileInfo.boundaryEnd);
       if (eBoundary != string::npos) {
         FileManager::saveFileBuffer(fileContent.substr(0, eBoundary),
-                                    fileInfo.fileName);
+                                    uploadFolderPath + "/" + fileInfo.fileName);
         return;
       } else {
 
-        FileManager::saveFileBuffer(fileContent, fileInfo.fileName);
+        FileManager::saveFileBuffer(fileContent,
+                                    uploadFolderPath + "/" + fileInfo.fileName);
       }
     }
   }
@@ -254,11 +280,21 @@ void handleMultipleFiles(const requestHeader &request, FileInfo &fileInfo,
     int boundaryEnd = bodyAsString.find(fileInfo.boundaryEnd);
     if (boundaryEnd != string::npos) {
       FileManager::saveFileBuffer(bodyAsString.substr(0, boundaryEnd),
-                                  fileInfo.fileName);
+                                  uploadFolderPath + "/" + fileInfo.fileName);
       return;
     }
-    FileManager::saveFileBuffer(bodyAsString, fileInfo.fileName);
+    FileManager::saveFileBuffer(bodyAsString,
+                                uploadFolderPath + "/" + fileInfo.fileName);
   }
+  // set The Size of the File
+  for (clientFinelFile &file : files) {
+    if (file.fileName == fileInfo.fileName) {
+      file.fileSize = currentFileSize;
+    }
+  }
+
+  // clear Memory
+  bodyAsString.shrink_to_fit();
 };
 
 bool isContentTypeFormData(const string &contentType) {
@@ -285,8 +321,8 @@ string extractFileName(const string &buffer) {
     if (fileName.empty()) {
       return "No fileName provided";
     }
-    return (generateRandomString(10) + fileName);
-  } catch (...) {
+    return (generateRandomString(15) + fileName);
+  } catch (const runtime_error &e) {
 
     return "No fileName provided";
   }
@@ -318,8 +354,7 @@ string extractFialdName(std::string &buffer) {
         fialdNameWithKeyAndValue.size() - fialdNameWithKeyAndValue.find("\"") -
             3);
     return fialdName;
-  } catch (...) {
-
+  } catch (const runtime_error &e) {
     return "";
   }
   return "";

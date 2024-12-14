@@ -23,6 +23,7 @@ public:
   // content-type props we will use it as a type of varibles
   struct MultipartFormData {
     using clientFinelFile = ::Multipart_FormData::clientFinelFile;
+    using fileProgress = ::Multipart_FormData::fileProgress;
   };
   // Define a route with a lambda function executor
   void route(const std::string &routeName,
@@ -38,7 +39,7 @@ public:
 
   std::vector<Multipart_FormData::clientFinelFile>
   saveMultiPartFile(requestHeader, std::string path, int memoryAlloc,
-                    std::function<void(double)> per);
+                    std::function<void(Multipart_FormData::fileProgress)> per);
 };
 
 #endif

@@ -59,6 +59,15 @@ bool removeFile(std::string filePath) {
     return false;
   }
 }
+// function check if the path folder is existe
+bool isPathFolderExists(std::string folderPath) {
+  fs::path folder(folderPath);
+  if (fs::exists(folder) && fs::is_directory(folder)) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 // Function to find the full path of a file by name
 std::optional<std::string> findFileFullPath(const std::string &fileName,

@@ -13,6 +13,8 @@ bool removeFile(std::string path);
 std::optional<std::string> findFileFullPath(const std::string &fileName,
                                             const std::string &directory = ".");
 
+bool isPathFolderExists(std::string folderPath);
+
 } // namespace FileManager
 
 #endif

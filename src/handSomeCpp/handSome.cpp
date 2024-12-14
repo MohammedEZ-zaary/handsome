@@ -106,15 +106,15 @@ std::string HandsomeServer::readFileContent(const std::string &filePath) {
 }
 
 vector<HandsomeServer::MultipartFormData::clientFinelFile>
-HandsomeServer::saveMultiPartFile(requestHeader request, std::string path,
-                                  int memoryAlloc,
-                                  std::function<void(double)> per) {
+HandsomeServer::saveMultiPartFile(
+    requestHeader request, std::string path, int memoryAlloc,
+    std::function<void(MultipartFormData::fileProgress)> per) {
   int multiPartSockets =
       httpserver.getRoute(request, request.uri).multipartFormDataClientSocket;
 
   vector<HandsomeServer::MultipartFormData::clientFinelFile> results =
       Multipart_FormData::handleMultipartRequest(multiPartSockets, request,
-                                                 memoryAlloc, per);
+                                                 path, memoryAlloc, per);
 
   return results;
 };

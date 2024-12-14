@@ -3,6 +3,7 @@
 #include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/utils.hpp"
 #include <cstring>
+#include <future>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -321,8 +322,6 @@ void httpServer::acceptConnectionsWin() {
             requestHeader req;
             processClientRequest(clientSocket, req);
             // LineReturn
-            // std::cout << "Finsh multi Tread and close connection " <<
-            // std::endl;
             closesocket(clientSocket); // Close client connection when done
           },
           clientSocket);
@@ -331,7 +330,6 @@ void httpServer::acceptConnectionsWin() {
       // Single Thread
       requestHeader req;
       processClientRequest(clientSocket, req);
-      // std::cout << "Finsh Single Tread and close connection : " << std::endl;
       closesocket(clientSocket);
     }
   }
