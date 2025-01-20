@@ -28,7 +28,7 @@ def configure():
         command = (
             "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "
             '-DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" '
-            '-S . -B build -G "MinGW Makefiles"'
+            '-S . -B build '
         )
 
     else:
@@ -57,7 +57,7 @@ def buildTheTest():
         print("Build clean .")
 
     print("Build the test")
-    command1 = 'cmake -S ./test -B ./test/build -G "MinGW Makefiles"'
+    command1 = 'cmake -S ./test -B ./test/build '
     command2 = "cmake  --build ./test/build"
     if run_command(command1) != 0:
         print("Build faild 1")

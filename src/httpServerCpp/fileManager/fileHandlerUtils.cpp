@@ -2,15 +2,18 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <optional>
 #include <sstream>
 #include <string>
+std::mutex fileMutex;
 namespace fs = std::filesystem;
 
 namespace FileManager {
 
 void saveFileBuffer(const std::string &imageBuffer,
                     const std::string &fileName) {
+  std::lock_guard<std::mutex> lock(fileMutex);
   // Open the file in binary mode
   std::ofstream outFile(fileName, std::ios::binary | std::ios::app);
   if (!outFile) {
@@ -18,14 +21,12 @@ void saveFileBuffer(const std::string &imageBuffer,
               << std::endl;
     return;
   }
-
   // Write the buffer to the file
   outFile.write(imageBuffer.data(), imageBuffer.size());
   // Close the file
   outFile.close();
-  // std::cout << "Image saved successfully to " << fileName << "." <<
-  // std::endl;
 }
+
 std::string readFileContent(const std::string &filePath) {
   std::ifstream file(filePath);
   if (!file) {

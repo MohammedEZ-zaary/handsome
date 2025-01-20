@@ -17,11 +17,11 @@ namespace fs = std::filesystem;
 // craet content type header of file base on file end extantion
 ContentTypeMapper contentType; // create instance
 
+httpServer HandsomeServer::httpserver; // Adjust this based on your design
 HandsomeServer::HandsomeServer() {
   // Call the serveStaticFile method inside the constructor body
   serveStaticFile(staticRootFolderPath);
   // Create a global or static instance of the httpServer
-  httpServer httpserver; // Adjust this based on your design
 };
 HandsomeServer &HandsomeServer::listen(int port) {
   // Set port number
@@ -106,7 +106,7 @@ std::string HandsomeServer::readFileContent(const std::string &filePath) {
 }
 
 vector<HandsomeServer::MultipartFormData::clientFinelFile>
-HandsomeServer::saveMultiPartFile(
+HandsomeServer::MultipartFormData::saveMultiPartFile(
     requestHeader request, std::string path, int memoryAlloc,
     std::function<void(MultipartFormData::fileProgress)> per) {
   int multiPartSockets =

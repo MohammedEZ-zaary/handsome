@@ -1,0 +1,124 @@
+benchmark web server with c++:
+
+ using ThreadPool  with .join(): c++
+  Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 80
+Failed Requests: 1920
+Total Time: 11.05 seconds
+Requests per Second: 181.03
+
+with ThreadPool with .detech():c++
+Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 80
+Failed Requests: 1920
+Total Time: 11.05 seconds
+Requests per Second: 181.03
+
+
+when using futur async : c++
+  Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 2000
+Failed Requests: 0
+Total Time: 5.99 seconds
+Requests per Second: 333.82
+
+
+using nothing just main thread : c++
+PS C:\Users\dev\Documents\development\handsome> python .\upload_test_concurrent.py
+Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 2000
+Failed Requests: 0
+Total Time: 5.71 seconds
+Requests per Second: 350.49
+
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# Data for the benchmark tests
+methods = [
+    "TP.join()",
+    " TP.detach()",
+    "future",
+    "MainT",
+    "SingleT I/O",
+    "SingleT I/O",
+    "Express.js"
+]
+
+total_time = [
+    11.05,  # TP.join()
+    11.05,   # TP.detach()
+    5.99,  # future
+    5.71,    # MainT
+    1.10,   # SingleT I/O
+    1.33,   #SingleT I/O
+    0.72    # Express.js
+]
+
+rps = [
+    181.03,  # TP.join()
+    181.03,  # TP.detach()
+    333.82,  # future 
+    350.49,  # MainT
+    1823.14, # SingleT I/O
+    1507.22, # SingleT I/O
+    2774.28  # Express.js
+]
+
+# Plotting the data
+fig, ax1 = plt.subplots(figsize=(10, 6))
+
+ax1.set_xlabel('Method')
+ax1.set_ylabel('Total Time (seconds)', color='tab:blue')
+ax1.bar(methods, total_time, color='tab:blue', alpha=0.6, label="Total Time (s)")
+ax1.tick_params(axis='y', labelcolor='tab:blue')
+
+ax2 = ax1.twinx()
+ax2.set_ylabel('Requests per Second', color='tab:green')
+ax2.plot(methods, rps, color='tab:green', marker='o', label="Requests per Second (RPS)")
+ax2.tick_params(axis='y', labelcolor='tab:green')
+
+fig.tight_layout()
+plt.title('Benchmark Comparison of Web Server Methods')
+plt.xticks(rotation=45)
+plt.show()
+
+sending the same request to server with express.js (javascipt) :
+PS C:\Users\dev\Documents\development\handsome> python .\upload_test_concurrent.py
+Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 2000
+Failed Requests: 0
+Total Time: 0.72 seconds
+Requests per Second: 2774.28
+
+using single thread with io operation c++ :
+Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 2000
+Failed Requests: 0
+Total Time: 1.10 seconds
+Requests per Second: 1823.14
+
+using 4 threads with io operation : c++
+Load Test Completed
+Total Requests: 2000
+CONCURRENT_REQUESTS: 100
+Successful Requests: 1886
+Failed Requests: 114
+Total Time: 1.33 seconds
+Requests per Second: 1507.22

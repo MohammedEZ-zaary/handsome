@@ -130,6 +130,7 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
     // start get the rest of the buffer
     if (!requestBody.empty()) {
       // this is more faster then body.push_back();
+      //
       body.insert(body.end(), requestBody.begin(), requestBody.end());
     }
     while (bytesToRead != contentLengthOfTheFile) {
@@ -192,6 +193,7 @@ handleMultipartRequest(int clientSocket, const requestHeader &req,
   } catch (const runtime_error &e) {
     bytesToRead = 0;
     body.clear();
+    cout << "here" << endl;
     cout << "Error : " << &e << endl;
   }
   return files;
@@ -318,6 +320,7 @@ string extractFileName(const string &buffer) {
     string fileName =
         (fileNameWithKeyAndValue.substr(fileNameWithKeyAndValue.find("\"") + 1,
                                         fileNameWithKeyAndValue.length() - 12));
+
     if (fileName.empty()) {
       return "No fileName provided";
     }
@@ -355,6 +358,7 @@ string extractFialdName(std::string &buffer) {
             3);
     return fialdName;
   } catch (const runtime_error &e) {
+    std::cerr << "Error happend 2" << std::endl;
     return "";
   }
   return "";

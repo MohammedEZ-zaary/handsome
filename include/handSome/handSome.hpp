@@ -6,10 +6,11 @@
 #include "../httpServer/responseHeader.hpp"
 #include <functional>
 #include <string>
+#include <vector>
 
 class HandsomeServer {
 private:
-  httpServer httpserver;            // Instance of the httpServer class
+  static httpServer httpserver;     // Instance of the httpServer class
   std::string staticRootFolderPath; // Path to the static files
   // Serve static files from a directory
   void serveStaticFile(const std::string &staticFolderName);
@@ -24,6 +25,9 @@ public:
   struct MultipartFormData {
     using clientFinelFile = ::Multipart_FormData::clientFinelFile;
     using fileProgress = ::Multipart_FormData::fileProgress;
+    std::vector<Multipart_FormData::clientFinelFile> saveMultiPartFile(
+        requestHeader, std::string path, int memoryAlloc,
+        std::function<void(Multipart_FormData::fileProgress)> per);
   };
   // Define a route with a lambda function executor
   void route(const std::string &routeName,
@@ -34,12 +38,6 @@ public:
   // return path of static folder
   std::string getStaticRootFolderPath();
   std::string readFileContent(const std::string &folderPath);
-
-  // under testing
-
-  std::vector<Multipart_FormData::clientFinelFile>
-  saveMultiPartFile(requestHeader, std::string path, int memoryAlloc,
-                    std::function<void(Multipart_FormData::fileProgress)> per);
 };
 
 #endif

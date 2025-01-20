@@ -1,6 +1,7 @@
 // global
 #ifndef HTTP_SERVER_HPP
 #define HTTP_SERVER_HPP
+#include "ioManagment.hpp"
 #include "requestHeader.hpp"
 #include "route.hpp"
 #include <functional>
@@ -15,14 +16,16 @@
 class httpServer {
 private:
   // global = work both on win and linux
-  int port;              // Port number
-  int clientSocketClone; // Client socket
-  int serverSocketClone; // Server socket
+  int port;                 // Port number
+  int clientSocketClone;    // Client socket
+  SOCKET serverSocketClone; // Server socket
   int routeCount = 0;
   Route Error404Page = Route("/404", [this](requestHeader req) {});
 
   std::vector<Route> routes; // Use a vector to store routes
   std::string extractRoute(const std::string &requestLine);
+  // io_context ioAsync = io_context();
+  // async task using multi threading
 
 // linux Methods
 #ifdef __linux__
@@ -52,7 +55,9 @@ public:
       : port(0), clientSocketClone(-1), serverSocketClone(-1) {
   } // Constructor for initialization
   bool MULTI_THREAD = true;
-  void run();                       // Starts the server
+  void run(); // Starts the server
+              //
+  void test(SOCKET clientSocket);
   int getClientSocketClone() const; // Returns the client socket clone
   int getServerSocketClone() const; // Returns the server socket clone
 
