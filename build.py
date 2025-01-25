@@ -28,7 +28,7 @@ def configure():
         command = (
             "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "
             '-DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" '
-            '-S . -B build '
+            '-S . -B build  -G "MinGW Makefiles"'
         )
 
     else:
@@ -57,7 +57,7 @@ def buildTheTest():
         print("Build clean .")
 
     print("Build the test")
-    command1 = 'cmake -S ./test -B ./test/build '
+    command1 = 'cmake -S ./test -B ./test/build -G "MinGW Makefiles"'
     command2 = "cmake  --build ./test/build"
     if run_command(command1) != 0:
         print("Build faild 1")
@@ -68,7 +68,7 @@ def buildTheTest():
 def runTheServer():
     print("Run the http server")
 
-    subprocess.run(["alacritty", "-e", ".\\test\\build\\main.exe"], shell=True)
+    subprocess.run(["start", "cmd", "/k", ".\\test\\build\\main.exe"], shell=True)
     # command = ".\\test\\build\\main.exe"
     # if run_command(command) != 0:
     # print("faild run the server")
@@ -82,4 +82,4 @@ if __name__ == "__main__":
     build()
     print("Build complete.")
     buildTheTest()
-    # runTheServer()
+    runTheServer()
