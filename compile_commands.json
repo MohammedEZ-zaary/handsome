@@ -1,0 +1,50 @@
+[
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\allContentTypeHeader.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\allContentTypeHeader.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/allContentTypeHeader.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/allContentTypeHeader.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\httpServer.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\httpServer.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/httpServer.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/httpServer.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\fileManager\\fileHandlerUtils.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\fileManager\\fileHandlerUtils.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/fileManager/fileHandlerUtils.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/fileManager/fileHandlerUtils.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\headerParsing\\form-data.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\headerParsing\\form-data.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/headerParsing/form-data.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/headerParsing/form-data.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\header.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\header.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/header.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/header.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\requestHeader.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\requestHeader.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/requestHeader.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/requestHeader.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\httpServerCpp\\responseHeader.cpp.obj -c E:\\development\\handsome\\src\\httpServerCpp\\responseHeader.cpp",
+  "file": "E:/development/handsome/src/httpServerCpp/responseHeader.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/httpServerCpp/responseHeader.cpp.obj"
+},
+{
+  "directory": "E:/development/handsome/build",
+  "command": "C:\\msys\\mingw64\\bin\\g++.exe -D_WIN32_WINNT=0x0A00 @CMakeFiles/handsomelib.dir/includes_CXX.rsp -std=gnu++20 -o CMakeFiles\\handsomelib.dir\\src\\handSomeCpp\\handSome.cpp.obj -c E:\\development\\handsome\\src\\handSomeCpp\\handSome.cpp",
+  "file": "E:/development/handsome/src/handSomeCpp/handSome.cpp",
+  "output": "CMakeFiles/handsomelib.dir/src/handSomeCpp/handSome.cpp.obj"
+}
+]

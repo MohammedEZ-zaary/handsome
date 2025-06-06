@@ -1,12 +1,17 @@
 // global
 #include "../../include/httpServer/httpServer.hpp"
+#include "../../include/httpServer/headerParsing/form-data.hpp"
+#include "../../include/httpServer/ioManagment.hpp"
 #include "../../include/httpServer/utils.hpp"
-#include <fstream>
+#include "httpServer/requestHeader.hpp"
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <functional>
 #include <iostream>
-#include <map>
 #include <sstream>
 #include <string>
-#include <thread>
+
 // windows
 #ifdef _WIN32
 #include <winsock2.h>
@@ -22,15 +27,14 @@
 #endif
 
 // namespace
-using std::cout;
 using std::endl;
 using std::string;
 using std::stringstream;
 
 void httpServer::run() {
-  // windows
-  #ifdef _WIN32
-   if (!createSocketWin()) {
+// windows
+#ifdef _WIN32
+  if (!createSocketWin()) {
     return; // Early exit on error
   }
 
@@ -42,41 +46,43 @@ void httpServer::run() {
     return; // Early exit on error
   }
   if (httpServer::MULTI_THREAD) {
-    std::cout << "\033[1;32m[+] Server is listening on port " << port << " Using Multi Threads" << "\033[0m\n";
-  } else {
-    std::cout << "\033[1;32m[+] Server is listening on port " << port << " Using Single Thread" << "\033[0m\n";
-  }
-
-  acceptConnectionsWin(); // Accept client connections
-
-  #endif
-
-  // linux
-  #ifdef __linux__ 
-  if (!createSocket()) {
-    return; // Early exit on error
-  }
-
-  if (!bindSocket()) {
-    return; // Early exit on error
-  }
-
-  if (!listenForConnections()) {
-    return; // Early exit on error
-  }
-  if (httpServer::MULTI_THREAD) {
-
     std::cout << "\033[1;32m[+] Server is listening on port " << port
               << " Using Multi Threads" << "\033[0m\n";
   } else {
-
     std::cout << "\033[1;32m[+] Server is listening on port " << port
               << " Using Single Thread" << "\033[0m\n";
   }
-  acceptConnections(); // Accept client connections
-  #endif
+  acceptConnectionsWin();
 }
-//global
+// acceptConnectionsWin(); // Accept client connections
+
+#endif
+
+// linux
+#ifdef __linux__
+if (!createSocket()) {
+  return; // Early exit on error
+}
+
+if (!bindSocket()) {
+  return; // Early exit on error
+}
+
+if (!listenForConnections()) {
+  return; // Early exit on error
+}
+if (httpServer::MULTI_THREAD) {
+
+  std::cout << "\033[1;32m[+] Server is listening on port " << port
+            << " Using Multi Threads" << "\033[0m\n";
+} else {
+
+  std::cout << "\033[1;32m[+] Server is listening on port " << port
+            << " Using Single Thread" << "\033[0m\n";
+}
+acceptConnections(); // Accept client connections
+#endif
+// global
 bool httpServer::bindSocket() {
   sockaddr_in serverAddress;
   serverAddress.sin_family = AF_INET;
@@ -86,62 +92,89 @@ bool httpServer::bindSocket() {
   if (bind(serverSocketClone, (struct sockaddr *)&serverAddress,
            sizeof(serverAddress)) < 0) {
     std::cerr << "Failed to bind socket" << endl;
-    #ifdef _WIN32 
-      closesocket(serverSocketClone);
-      WSACleanup();
-    #endif
-    #ifdef __linux__ 
-      close(serverSocketClone);
-    #endif
+#ifdef _WIN32
+    closesocket(serverSocketClone);
+    WSACleanup();
+#endif
+#ifdef __linux__
+    close(serverSocketClone);
+#endif
     return false; // Indicate failure
   }
   return true; // Indicate success
 }
+
 void httpServer::processClientRequest(int clientSocket, requestHeader &req) {
-  char buffer[1024] = {0};
+  char buffer[4048] = {0};
   int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+
   if (bytesReceived < 0) {
     // std::mutx insted of std::cerr
     std::cerr << "Error receiving data from client" << endl;
     return;
   }
-  // Safe
-  auto headers =  httpParsingString::parseHttpHeaderRequest(buffer)  ;
+
+  //  first buffer Received
+  auto headers = httpParsingString::parseHttpHeaderRequest(buffer);
 
   for (const auto &pair : headers) {
-    // Not Safe
-    requestHandlerUtil::handleRequestHeader(req , pair.first , pair.second);
+    // set Content length as int
+    if (pair.first == "Content-Length") {
+      try {
+        req.contentLength = std::stoll(pair.second);
+
+      } catch (const std::invalid_argument &) {
+        std::cout << "Error: 'Content-Length' value is not a valid number."
+                  << std::endl;
+      } catch (const std::out_of_range &) {
+
+        std::cout << req.contentLength << std::endl;
+        std::cout << "Error: 'Content-Length' value is too large to handle."
+                  << std::endl;
+      }
+    }
+    requestHandlerUtil::handleRequestHeader(req, pair.first, pair.second);
     req.setHeader(pair.first, pair.second);
   }
-  // give value  to Request  Body if the method is POST request
+
+  // Handel Content-Types
   for (const auto &pair : headers) {
+    // Handel Content-Type : x-www-form-urlencoded
+    // give value  to Request  Body if the method is POST request
     if (pair.first == "Body") {
-      requestHandlerUtil::handleRequestBody(req ,pair.second);
+      requestHandlerUtil::handleRequestBody(req, pair.second);
+    }
+    // Handel Content-Type : Multipart/Form-data
+    if (Multipart_FormData::isContentTypeFormData(pair.second)) {
+
+      if (req.contentLength == 0) {
+        std::cerr << "[!Warning] Please add file . The body is empty"
+                  << std::endl;
+      } else {
+        Route &route = getRoute(req, req.uri);
+        route.multipartFormDataClientSocket = clientSocket;
+      }
     }
   }
+
   // Check client request
   for (const auto &pair : headers) {
     if (pair.first == "Request-Line") {
       // search for Route for example: /login
-      Route routeClone = getRoute(req, httpUtilsString::extractRoute(pair.second));
-      // excute the the content of the route
+      // std::cout << req.getHeader("Content-Type") << std::endl;
+      //
+      Route routeClone =
+          getRoute(req, httpUtilsString::extractRoute(pair.second));
+
       routeClone.executor(req);
+      closesocket(clientSocket);
+
       // clean Header
       req.cleanUpfunction();
     }
   }
 }
-std::string httpServer::readFileContent(const std::string &filePath) {
-  std::ifstream file(filePath);
-  if (!file) {
-    std::cerr << "Unable to open the file!" << endl;
-    return "";
-  }
 
-  stringstream buffer;
-  buffer << file.rdbuf(); // Read file contents into the stringstream
-  return buffer.str();    // Return the file content
-}
 void httpServer::portListen(int port) {
   this->port = port; // Use 'this' pointer for clarity
 }
@@ -154,14 +187,19 @@ void httpServer::setRoute(const Route &route) {
     routeCount++;
     return;
   }
-
+  // first route
+  if (routes.empty()) {
+    routes.push_back(route);
+    routeCount++;
+    return;
+  }
   routes.push_back(route);
   routeCount++;
 }
-Route httpServer::getRoute(requestHeader &req, const std::string &routeName) {
+Route &httpServer::getRoute(requestHeader &req, const std::string &routeName) {
   // Function to get a route by name
   // search for Name of The client Route
-  for (const Route &route : routes) {
+  for (Route &route : routes) {
     if (route.routeName == req.uri && req.uri != "/404") {
       return route;
     }
@@ -218,7 +256,7 @@ void httpServer::acceptConnections() {
             close(clientSocket); // Close client connection when done
           },
           clientSocket);
-      client_request_thread.join();
+      client_request_thread.detach();
     } else {
       // Single Thread
       requestHeader req;
@@ -230,30 +268,32 @@ void httpServer::acceptConnections() {
 
 #endif
 ////// windows httpServer Methods //////////
-#ifdef  _WIN32 
+#ifdef _WIN32
 bool httpServer::createSocketWin() {
-    WSADATA wsaData;
-    SOCKET serverSocket, clientSocket;
-    struct sockaddr_in serverAddr, clientAddr;
-    int clientAddrSize = sizeof(clientAddr);
+  WSADATA wsaData;
+  SOCKET serverSocket, clientSocket;
+  struct sockaddr_in serverAddr, clientAddr;
+  int clientAddrSize = sizeof(clientAddr);
 
-    // Initialize Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "WSAStartup failed with error: " << WSAGetLastError() << std::endl;
-        return false;
-    }
+  // Initialize Winsock
+  if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+    std::cerr << "WSAStartup failed with error: " << WSAGetLastError()
+              << std::endl;
+    return false;
+  }
 
-    // Create a socket
-    serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (serverSocket == INVALID_SOCKET) {
-        std::cerr << "Socket creation failed with error: " << WSAGetLastError() << std::endl;
-        WSACleanup();
-        return false;
-    }
-    serverSocketClone = serverSocket;
-    httpServer::clientAddrClone = clientAddr;
-    httpServer::clientAddrSizeClone = clientAddrSize ;
-    
+  // Create a socket
+  serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (serverSocket == INVALID_SOCKET) {
+    std::cerr << "Socket creation failed with error: " << WSAGetLastError()
+              << std::endl;
+    WSACleanup();
+    return false;
+  }
+  serverSocketClone = serverSocket;
+  httpServer::clientAddrClone = clientAddr;
+  httpServer::clientAddrSizeClone = clientAddrSize;
+
   if (serverSocketClone == INVALID_SOCKET) {
     std::cerr << "Failed to create socket" << endl;
     exit(EXIT_FAILURE);
@@ -263,42 +303,78 @@ bool httpServer::createSocketWin() {
 }
 bool httpServer::listenForConnectionsWin() {
   // Change 100 to a more suitable backlog size if necessary
-  if (listen(serverSocketClone, 50) < 0) {
+  if (listen(serverSocketClone, 10000) < 0) {
     std::cerr << "Failed to listen on socket" << endl;
     closesocket(serverSocketClone);
     return false; // Indicate failure
   }
   return true; // Indicate success
 }
-void httpServer::acceptConnectionsWin() {
-  while (true) {
-  int clientSocket = accept(serverSocketClone, (struct sockaddr *)&clientAddrClone, &clientAddrSizeClone);
-  if (clientSocket == INVALID_SOCKET) {
-    std::cerr << "Accept failed with error: " << WSAGetLastError() << std::endl;
-    closesocket(serverSocketClone);
-    WSACleanup();
-    return ;
-  }
 
-    // Clone clientSocket to use it in responseHeader
-    clientSocketClone = clientSocket;
-    // MultiThreads
-    if (httpServer::MULTI_THREAD) {
-      std::thread client_request_thread(
-          [this](int clientSocket) {
-            requestHeader req;
-            processClientRequest(clientSocket, req);
-            closesocket(clientSocket); // Close client connection when done
-          },
-          clientSocket);
-      client_request_thread.join();
-    } else {
-      // Single Thread
-      requestHeader req;
-      processClientRequest(clientSocket, req);
-      closesocket(clientSocket);
+// void httpServer::acceptConnectionsWin() {
+//   io_context io(1);
+//   while (true) {
+//     int clientSocket =
+//         accept(serverSocketClone, (struct sockaddr *)&clientAddrClone,
+//                &clientAddrSizeClone);
+//     if (clientSocket == INVALID_SOCKET) {
+//       std::cerr << "Accept failed with error: " << WSAGetLastError()
+//                 << std::endl;
+//       closesocket(serverSocketClone);
+//       WSACleanup();
+//       return;
+//     } // Post client processing to the io context
+//     io.post([this, clientSocket] {
+//       requestHeader req;
+//       clientSocketClone = clientSocket;
+//       processClientRequest(clientSocket, req);
+//     });
+//   }
+// }
+
+void httpServer::acceptConnectionsWin() {
+  fd_set readfds;
+  struct timeval timeout;
+  timeout.tv_sec = 0;       // Set the timeout for select to 0 (non-blocking)
+  timeout.tv_usec = 100000; // 100ms timeout for select
+  io_context io(2);
+  while (true) {
+    FD_ZERO(&readfds);
+    FD_SET(serverSocketClone, &readfds); // Set server socket for monitoring
+
+    // Use select to wait for any client to connect or send/receive data
+    int activity = select(0, &readfds, NULL, NULL, &timeout);
+    if (activity == SOCKET_ERROR) {
+      std::cerr << "Select failed with error: " << WSAGetLastError()
+                << std::endl;
+      closesocket(serverSocketClone);
+      WSACleanup();
+      return;
+    }
+
+    if (FD_ISSET(serverSocketClone, &readfds)) {
+      // Accept new client connection
+      int clientSocket =
+          accept(serverSocketClone, (struct sockaddr *)&clientAddrClone,
+                 &clientAddrSizeClone);
+      if (clientSocket == INVALID_SOCKET) {
+        std::cerr << "Accept failed with error: " << WSAGetLastError()
+                  << std::endl;
+        closesocket(serverSocketClone);
+        WSACleanup();
+        return;
+      }
+      io.post([this, clientSocket] {
+        requestHeader req;
+        clientSocketClone = clientSocket;
+        processClientRequest(clientSocket, req);
+      });
+
+      // Process the client request (still in the same thread)
+
+      // Close client socket after processing
     }
   }
 }
-#endif
 
+#endif

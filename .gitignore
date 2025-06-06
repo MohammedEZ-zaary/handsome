@@ -2,4 +2,9 @@
 /.vscode
 /templates
 /build
-/test1
+/.cache
+compile_commands.json
+/test
+/uploads
+tasks.txt
+upload_test_concurrent.py

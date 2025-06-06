@@ -1,8 +1,12 @@
+#ifndef HTTPHEADER_UTILS
+#define HTTPHEADER_UTILS
+
+#include "httpServer.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
 
-using std::string ; 
+using std::string;
 /*
   httpUtilsString
     -> trim()
@@ -12,7 +16,7 @@ using std::string ;
     -> parseHttpHeaderRequest
   requestHandlerUtil
     -> handleRequestHeader()
-    -> handleRequestBody() 
+    -> handleRequestBody()
     -> handleQueryParams()
     -> handleQueryBody()
     -> urlDecoded()
@@ -42,9 +46,9 @@ string extractRoute(const string &requestLine) {
 
 }; // namespace httpUtilsString
 
-
 namespace httpParsingString {
-  std::map<std::string, std::string> parseHTTPRequest(const std::string &httpRequest) {
+std::map<std::string, std::string>
+parseHTTPRequest(const std::string &httpRequest) {
   // Function to parse the HTTP request and return key-value pairs
   std::map<std::string, std::string> headers;
   std::istringstream stream(httpRequest);
@@ -76,18 +80,20 @@ namespace httpParsingString {
 
   return headers;
 }
-std::map<std::string, std::string> parseHttpHeaderRequest(const std::string &request) {
+std::map<std::string, std::string>
+parseHttpHeaderRequest(const std::string &request) {
   return parseHTTPRequest(request); // Forward to the other method
 }
-}; // namespace httpUtilsHttpParsingString
+}; // namespace httpParsingString
 
 namespace requestHandlerUtil {
 
-string urlDecoded(const std::string &encoded) ; 
-void handleQueryBody(requestHeader &req, const std::string &value) ; 
-void handleQueryParams(requestHeader &req, const std::string &value); 
+string urlDecoded(const std::string &encoded);
+void handleQueryBody(requestHeader &req, const std::string &value);
+void handleQueryParams(requestHeader &req, const std::string &value);
 
-void handleRequestHeader(requestHeader &req, const std::string &key,const std::string &value) {
+void handleRequestHeader(requestHeader &req, const std::string &key,
+                         const std::string &value) {
 
   // handle Request Header
   // arr[0]  , arr[1], arr[2]
@@ -205,4 +211,5 @@ string urlDecoded(const std::string &encoded) {
   }
   return decoded.str();
 }
-}; // namespace httpUtilsRequestHandler
+}; // namespace requestHandlerUtil
+#endif

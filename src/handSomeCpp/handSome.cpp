@@ -1,22 +1,27 @@
 #include "../../include/handSome/handSome.hpp"
 #include "../../include/httpServer/allContentTypeHeader.hpp"
+#include "../../include/httpServer/fileManager/fileHandlerUtils.hpp"
+#include "../../include/httpServer/headerParsing/form-data.hpp"
 #include "../../include/httpServer/httpServer.hpp"
+#include "../../include/httpServer/requestHeader.hpp"
+#include "../../include/httpServer/responseHeader.hpp"
+#include "../../include/httpServer/route.hpp"
+
 #include <filesystem>
 #include <functional>
 #include <iostream>
 #include <string>
-#include <typeinfo> // Required for typeid
 
 using std::string;
 namespace fs = std::filesystem;
 // craet content type header of file base on file end extantion
 ContentTypeMapper contentType; // create instance
 
+httpServer HandsomeServer::httpserver; // Adjust this based on your design
 HandsomeServer::HandsomeServer() {
   // Call the serveStaticFile method inside the constructor body
   serveStaticFile(staticRootFolderPath);
   // Create a global or static instance of the httpServer
-  httpServer httpserver; // Adjust this based on your design
 };
 HandsomeServer &HandsomeServer::listen(int port) {
   // Set port number
@@ -97,6 +102,19 @@ std::string HandsomeServer::getStaticRootFolderPath() {
 }
 std::string HandsomeServer::readFileContent(const std::string &filePath) {
   //  read files like javascript , html , css ...
-  return httpserver.readFileContent(filePath);
+  return FileManager::readFileContent(filePath);
 }
 
+vector<HandsomeServer::MultipartFormData::clientFinelFile>
+HandsomeServer::MultipartFormData::saveMultiPartFile(
+    requestHeader request, std::string path, int memoryAlloc,
+    std::function<void(MultipartFormData::fileProgress)> per) {
+  int multiPartSockets =
+      httpserver.getRoute(request, request.uri).multipartFormDataClientSocket;
+
+  vector<HandsomeServer::MultipartFormData::clientFinelFile> results =
+      Multipart_FormData::handleMultipartRequest(multiPartSockets, request,
+                                                 path, memoryAlloc, per);
+
+  return results;
+};
